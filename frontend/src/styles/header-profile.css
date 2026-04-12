@@ -1,0 +1,102 @@
+.layout-header__profile {
+  position: relative;
+}
+
+.layout-header__profile-trigger {
+  min-height: 44px;
+  padding: 6px 25px 6px 8px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: 0.2s ease;
+}
+
+.layout-header__profile-trigger:hover {
+  background: #f8fafc;
+}
+
+.layout-header__profile-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f172a, #334155);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.layout-header__profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 160px;
+}
+
+.layout-header__profile-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layout-header__profile-role {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.layout-header__profile-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  min-width: 220px;
+  padding: 10px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: 0.2s ease;
+  z-index: 40;
+}
+
+.layout-header__profile.is-open .layout-header__profile-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.layout-header__profile-item {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  background: transparent;
+  transition: 0.2s ease;
+}
+
+.layout-header__profile-item:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
