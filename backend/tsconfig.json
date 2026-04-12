@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    /* ============================= */
+    /* Project Structure */
+    /* ============================= */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* ============================= */
+    /* Module System (Node + ESM) */
+    /* ============================= */
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2020",
+
+    /* ============================= */
+    /* Type Support */
+    /* ============================= */
+    "types": ["node", "dotenv/config"],
+    "esModuleInterop": true,
+
+    /* ============================= */
+    /* Strictness */
+    /* ============================= */
+    "strict": true,
+    "skipLibCheck": true,
+
+    /* ============================= */
+    /* Development */
+    /* ============================= */
+    "sourceMap": true,
+    "verbatimModuleSyntax": false
+  },
+
+  "include": ["src", "prisma.config.ts", "prisma"],
+  "exclude": ["node_modules", "dist"]
+}
