@@ -9,6 +9,7 @@ import UnauthorizedPage from "../pages/UnauthorizedPage";
 
 import ProtectedRoute from "../features/auth/ProtectedRoute";
 import AuthorDashboard from "../pages/AuthorDashboard";
+import AuthorSubmitPage from "../pages/AuthorSubmitPage";
 import ReviewerDashboard from "../pages/ReviewerDashboard";
 import CommitteeDashboard from "../pages/CommitteeDashboard";
 
@@ -25,7 +26,10 @@ export const router = createBrowserRouter([
       // AUTHOR only
       {
         element: <ProtectedRoute roles={["AUTHOR"]} />,
-        children: [{ path: "author", element: <AuthorDashboard /> }],
+        children: [
+          { path: "author", element: <AuthorDashboard /> },
+          { path: "author/submit", element: <AuthorSubmitPage /> },
+        ],
       },
 
       // REVIEWER only

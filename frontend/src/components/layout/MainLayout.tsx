@@ -1,16 +1,10 @@
-import {
-  Bell,
-  Flag,
-  LogIn,
-  Upload,
-  User,
-  LogOut,
-  LayoutDashboard,
-} from "lucide-react";
+import { Bell, Flag, LogIn, Upload, User } from "lucide-react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { useMemo, useRef, useState, useEffect } from "react";
 import HeaderDropdown from "./HeaderDropdown";
+import HeaderProfileMenu from "./HeaderProfileMenu";
 import { useAuth } from "../../features/auth/AuthContext";
+import { useLanguage } from "../../features/language/LanguageContext";
+
 import "../../styles/layout.css";
 import "../../styles/header-dropdown.css";
 import "../../styles/header-profile.css";
@@ -39,61 +33,10 @@ const contactItems = [
   { label: "Зворотний зв’язок", to: "/" },
 ];
 
-function getDashboardLink(role?: string) {
-  if (role === "AUTHOR") return "/author";
-  if (role === "REVIEWER") return "/reviewer";
-  if (role === "COMMITTEE") return "/committee";
-  return "/";
-}
-
-function getRoleLabel(role?: string) {
-  if (role === "AUTHOR") return "Автор";
-  if (role === "REVIEWER") return "Рецензент";
-  if (role === "COMMITTEE") return "Комітет";
-  return "Користувач";
-}
-
 export default function MainLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (!profileRef.current) return;
-      if (!profileRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsProfileOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  const profileTitle = useMemo(() => {
-    if (!user) return "";
-    const fullName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim();
-    return fullName || user.email;
-  }, [user]);
-
-  function handleLogout() {
-    logout();
-    setIsProfileOpen(false);
-    navigate("/");
-  }
+  const { language, toggleLanguage } = useLanguage();
 
   function handleUploadClick() {
     if (!user) {
@@ -102,7 +45,7 @@ export default function MainLayout() {
     }
 
     if (user.role === "AUTHOR") {
-      navigate("/author");
+      navigate("/author/submit");
       return;
     }
 
@@ -175,56 +118,14 @@ export default function MainLayout() {
               type="button"
               className="layout-header__lang"
               aria-label="Зміна мови"
+              onClick={toggleLanguage}
             >
               <Flag size={16} />
-              <span>UA / ENG</span>
+              <span>{language === "ua" ? "UA" : "ENG"}</span>
             </button>
 
             {user ? (
-              <div
-                ref={profileRef}
-                className={`layout-header__profile ${isProfileOpen ? "is-open" : ""}`}
-              >
-                <button
-                  type="button"
-                  className="layout-header__profile-trigger"
-                  onClick={() => setIsProfileOpen((prev) => !prev)}
-                  aria-expanded={isProfileOpen}
-                >
-                  <div className="layout-header__profile-avatar">
-                    {profileTitle.charAt(0).toUpperCase()}
-                  </div>
-
-                  <div className="layout-header__profile-info">
-                    <span className="layout-header__profile-name">
-                      {profileTitle}
-                    </span>
-                    <span className="layout-header__profile-role">
-                      {getRoleLabel(user.role)}
-                    </span>
-                  </div>
-                </button>
-
-                <div className="layout-header__profile-menu">
-                  <Link
-                    to={getDashboardLink(user.role)}
-                    className="layout-header__profile-item"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <LayoutDashboard size={16} />
-                    <span>Мій кабінет</span>
-                  </Link>
-
-                  <button
-                    type="button"
-                    className="layout-header__profile-item"
-                    onClick={handleLogout}
-                  >
-                    <LogOut size={16} />
-                    <span>Вийти</span>
-                  </button>
-                </div>
-              </div>
+              <HeaderProfileMenu user={user} logout={logout} />
             ) : (
               <div className="layout-header__auth-links">
                 <Link to="/login" className="layout-header__auth-link">
