@@ -121,7 +121,7 @@ export default function MainLayout() {
               onClick={toggleLanguage}
             >
               <Flag size={16} />
-              <span>{language === "ua" ? "UA" : "ENG"}</span>
+              <span>{language === "ua" ? "UA" : "EN"}</span>
             </button>
 
             {user ? (
