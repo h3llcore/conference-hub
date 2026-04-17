@@ -1,30 +1,29 @@
-import { CalendarDays, Clock3, FileText, Plus, Search, Upload } from "lucide-react";
+import {
+  CalendarDays,
+  Clock3,
+  FileText,
+  Plus,
+  Search,
+  Upload,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { getMySubmissions } from "../features/submissions/submissions.api";
 import "../styles/author-dashboard.css";
 
-const submissions = [
-  {
-    id: 1,
-    title: "Моделі штучного інтелекту в освітньому середовищі",
-    venue: "Журнал комп’ютерних наук",
-    status: "На рецензуванні",
-    date: "12.04.2026",
-  },
-  {
-    id: 2,
-    title: "Хмарні сервіси для дослідницьких платформ",
-    venue: "Інформаційні системи та технології",
-    status: "Прийнято",
-    date: "05.04.2026",
-  },
-  {
-    id: 3,
-    title: "Цифрові екосистеми наукових комунікацій",
-    venue: "Міжнародна конференція Digital Science",
-    status: "Чернетка",
-    date: "01.04.2026",
-  },
-];
+type Submission = {
+  id: string;
+  title: string;
+  abstract: string;
+  keywords: string;
+  venueType: "JOURNAL" | "CONFERENCE";
+  venue: string;
+  coAuthors?: string | null;
+  notes?: string | null;
+  fileName?: string | null;
+  status: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "ACCEPTED" | "REJECTED";
+  createdAt: string;
+};
 
 const deadlines = [
   {
@@ -50,33 +49,106 @@ const announcements = [
   },
 ];
 
-function getStatusClass(status: string) {
-  if (status === "Прийнято") return "author-dashboard__status author-dashboard__status--accepted";
-  if (status === "На рецензуванні")
+function formatStatus(status: Submission["status"]) {
+  if (status === "ACCEPTED") return "Прийнято";
+  if (status === "UNDER_REVIEW") return "На рецензуванні";
+  if (status === "SUBMITTED") return "Подано";
+  if (status === "REJECTED") return "Відхилено";
+  return "Чернетка";
+}
+
+function getStatusClass(status: Submission["status"]) {
+  if (status === "ACCEPTED") {
+    return "author-dashboard__status author-dashboard__status--accepted";
+  }
+
+  if (status === "UNDER_REVIEW" || status === "SUBMITTED") {
     return "author-dashboard__status author-dashboard__status--review";
-  if (status === "Чернетка") return "author-dashboard__status author-dashboard__status--draft";
-  return "author-dashboard__status";
+  }
+
+  if (status === "REJECTED") {
+    return "author-dashboard__status author-dashboard__status--rejected";
+  }
+
+  return "author-dashboard__status author-dashboard__status--draft";
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("uk-UA");
 }
 
 export default function AuthorDashboard() {
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSubmissions() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getMySubmissions();
+
+        if (isMounted) {
+          setSubmissions(data.submissions || []);
+        }
+      } catch (e: any) {
+        if (isMounted) {
+          setError(e.message || "Не вдалося завантажити подання.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadSubmissions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const stats = useMemo(() => {
+    const total = submissions.length;
+    const activeReview = submissions.filter(
+      (item) => item.status === "UNDER_REVIEW" || item.status === "SUBMITTED",
+    ).length;
+    const drafts = submissions.filter((item) => item.status === "DRAFT").length;
+
+    return { total, activeReview, drafts };
+  }, [submissions]);
+
   return (
     <section className="author-dashboard">
       <div className="author-dashboard__hero">
         <div className="author-dashboard__hero-content">
           <p className="author-dashboard__eyebrow">Кабінет автора</p>
-          <h1 className="author-dashboard__title">Вітаємо у вашому робочому просторі</h1>
+          <h1 className="author-dashboard__title">
+            Вітаємо у вашому робочому просторі
+          </h1>
           <p className="author-dashboard__description">
-            Тут ви можете відстежувати свої подання, переглядати дедлайни, працювати
-            з чернетками та швидко подавати нові наукові матеріали.
+            Тут ви можете відстежувати свої подання, переглядати дедлайни,
+            працювати з чернетками та швидко подавати нові наукові матеріали.
           </p>
 
           <div className="author-dashboard__hero-actions">
-            <Link to="/author/submit" className="author-dashboard__hero-button author-dashboard__hero-button--primary">
+            <Link
+              to="/author/submit"
+              className="author-dashboard__hero-button author-dashboard__hero-button--primary"
+            >
               <Upload size={16} />
               <span>Подати нову роботу</span>
             </Link>
 
-            <button type="button" className="author-dashboard__hero-button author-dashboard__hero-button--secondary">
+            <button
+              type="button"
+              className="author-dashboard__hero-button author-dashboard__hero-button--secondary"
+            >
               <Search size={16} />
               <span>Пошук журналів</span>
             </button>
@@ -90,7 +162,7 @@ export default function AuthorDashboard() {
             <FileText size={20} />
           </div>
           <div>
-            <p className="author-dashboard__stat-value">12</p>
+            <p className="author-dashboard__stat-value">{stats.total}</p>
             <p className="author-dashboard__stat-label">Усього подань</p>
           </div>
         </article>
@@ -100,7 +172,7 @@ export default function AuthorDashboard() {
             <Clock3 size={20} />
           </div>
           <div>
-            <p className="author-dashboard__stat-value">3</p>
+            <p className="author-dashboard__stat-value">{stats.activeReview}</p>
             <p className="author-dashboard__stat-label">Активних перевірок</p>
           </div>
         </article>
@@ -110,8 +182,8 @@ export default function AuthorDashboard() {
             <CalendarDays size={20} />
           </div>
           <div>
-            <p className="author-dashboard__stat-value">2</p>
-            <p className="author-dashboard__stat-label">Найближчі дедлайни</p>
+            <p className="author-dashboard__stat-value">{stats.drafts}</p>
+            <p className="author-dashboard__stat-label">Чернеток</p>
           </div>
         </article>
       </div>
@@ -121,35 +193,74 @@ export default function AuthorDashboard() {
           <div className="author-dashboard__section-card">
             <div className="author-dashboard__section-header">
               <h2>Мої подання</h2>
-              <Link to="/author/submit" className="author-dashboard__add-link">
+              <Link
+                to="/author/submit"
+                className="author-dashboard__add-link"
+              >
                 <Plus size={16} />
                 <span>Нове подання</span>
               </Link>
             </div>
 
-            <div className="author-dashboard__submissions">
-              {submissions.map((item) => (
-                <article key={item.id} className="author-dashboard__submission-card">
-                  <div className="author-dashboard__submission-top">
-                    <div>
-                      <h3>{item.title}</h3>
-                      <p>{item.venue}</p>
+            {loading && (
+              <div className="author-dashboard__state">
+                Завантаження подань...
+              </div>
+            )}
+
+            {!loading && error && (
+              <div className="author-dashboard__state author-dashboard__state--error">
+                {error}
+              </div>
+            )}
+
+            {!loading && !error && submissions.length === 0 && (
+              <div className="author-dashboard__state">
+                У вас поки немає жодного подання.
+              </div>
+            )}
+
+            {!loading && !error && submissions.length > 0 && (
+              <div className="author-dashboard__submissions">
+                {submissions.map((item) => (
+                  <article
+                    key={item.id}
+                    className="author-dashboard__submission-card"
+                  >
+                    <div className="author-dashboard__submission-top">
+                      <div>
+                        <h3>{item.title}</h3>
+                        <p>{item.venue}</p>
+                      </div>
+
+                      <span className={getStatusClass(item.status)}>
+                        {formatStatus(item.status)}
+                      </span>
                     </div>
 
-                    <span className={getStatusClass(item.status)}>{item.status}</span>
-                  </div>
-
-                  <div className="author-dashboard__submission-bottom">
-                    <span>Дата оновлення: {item.date}</span>
-
-                    <div className="author-dashboard__submission-actions">
-                      <button type="button">Переглянути</button>
-                      <button type="button">Редагувати</button>
+                    <div className="author-dashboard__submission-meta">
+                      <span>
+                        Тип:{" "}
+                        {item.venueType === "JOURNAL"
+                          ? "Науковий журнал"
+                          : "Конференція"}
+                      </span>
+                      <span>Дата подання: {formatDate(item.createdAt)}</span>
+                      {item.fileName && <span>Файл: {item.fileName}</span>}
                     </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+
+                    <div className="author-dashboard__submission-bottom">
+                      <span>Ключові слова: {item.keywords}</span>
+
+                      <div className="author-dashboard__submission-actions">
+                        <button type="button">Переглянути</button>
+                        <button type="button">Редагувати</button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </main>
 
@@ -161,7 +272,10 @@ export default function AuthorDashboard() {
 
             <div className="author-dashboard__deadlines">
               {deadlines.map((deadline) => (
-                <article key={deadline.id} className="author-dashboard__deadline-card">
+                <article
+                  key={deadline.id}
+                  className="author-dashboard__deadline-card"
+                >
                   <h3>{deadline.title}</h3>
                   <span>{deadline.date}</span>
                 </article>
@@ -176,7 +290,10 @@ export default function AuthorDashboard() {
 
             <div className="author-dashboard__announcements">
               {announcements.map((item) => (
-                <article key={item.id} className="author-dashboard__announcement-card">
+                <article
+                  key={item.id}
+                  className="author-dashboard__announcement-card"
+                >
                   <p>{item.text}</p>
                 </article>
               ))}

@@ -1,6 +1,8 @@
 import { FileText, Info, Upload } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/author-submit.css";
+import { createSubmission } from "../features/submissions/submissions.api";
 
 type SubmitForm = {
   title: string;
@@ -23,9 +25,13 @@ const initialForm: SubmitForm = {
 };
 
 export default function AuthorSubmitPage() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState<SubmitForm>(initialForm);
   const [fileName, setFileName] = useState("");
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   function handleChange(
     event: React.ChangeEvent<
@@ -45,20 +51,83 @@ export default function AuthorSubmitPage() {
     setFileName(file ? file.name : "");
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function buildPayload(status: "DRAFT" | "SUBMITTED") {
+    return {
+      title: form.title.trim(),
+      abstract: form.abstract.trim(),
+      keywords: form.keywords.trim(),
+      venueType: form.venueType === "journal" ? "JOURNAL" : "CONFERENCE",
+      venue: form.venue,
+      coAuthors: form.coAuthors.trim(),
+      notes: form.notes.trim(),
+      fileName: fileName || null,
+      status,
+    };
+  }
 
+  function validateRequiredFields() {
     if (
       !form.title.trim() ||
       !form.abstract.trim() ||
       !form.keywords.trim() ||
       !form.venue.trim()
     ) {
-      setMessage("Будь ласка, заповніть обов’язкові поля.");
+      setError("Будь ласка, заповніть обов’язкові поля.");
+      return false;
+    }
+
+    return true;
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+    if (!validateRequiredFields()) {
       return;
     }
 
-    setMessage("Чернетку подання успішно підготовлено.");
+    try {
+      setLoading(true);
+
+      await createSubmission(buildPayload("SUBMITTED"));
+
+      setSuccess("Роботу успішно подано.");
+
+      setForm(initialForm);
+      setFileName("");
+
+      setTimeout(() => {
+        navigate("/author");
+      }, 1200);
+    } catch (e: any) {
+      setError(e.message || "Не вдалося подати роботу.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDraftSave() {
+    setError("");
+    setSuccess("");
+
+    if (!validateRequiredFields()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await createSubmission(buildPayload("DRAFT"));
+
+      setSuccess("Чернетку успішно збережено.");
+    } catch (e: any) {
+      setError(e.message || "Не вдалося зберегти чернетку.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -82,7 +151,8 @@ export default function AuthorSubmitPage() {
               <p>Усі поля з "*" є обов’язковими.</p>
             </div>
 
-            {message && <div className="author-submit__message">{message}</div>}
+            {error && <div className="form-error">{error}</div>}
+            {success && <div className="form-success">{success}</div>}
 
             <div className="author-submit__field">
               <label htmlFor="title">Назва роботи *</label>
@@ -157,10 +227,18 @@ export default function AuthorSubmitPage() {
                   onChange={handleChange}
                 >
                   <option value="">Оберіть варіант</option>
-                  <option value="journal-1">Журнал комп’ютерних наук</option>
-                  <option value="journal-2">Інформаційні системи та технології</option>
-                  <option value="conference-1">Digital Science 2026</option>
-                  <option value="conference-2">AI in Education Summit</option>
+                  <option value="Журнал комп’ютерних наук">
+                    Журнал комп’ютерних наук
+                  </option>
+                  <option value="Інформаційні системи та технології">
+                    Інформаційні системи та технології
+                  </option>
+                  <option value="Digital Science 2026">
+                    Digital Science 2026
+                  </option>
+                  <option value="AI in Education Summit">
+                    AI in Education Summit
+                  </option>
                 </select>
               </div>
             </div>
@@ -181,7 +259,12 @@ export default function AuthorSubmitPage() {
               <label htmlFor="file">Файл роботи *</label>
 
               <label className="author-submit__upload-box" htmlFor="file">
-                <input id="file" type="file" hidden onChange={handleFileChange} />
+                <input
+                  id="file"
+                  type="file"
+                  hidden
+                  onChange={handleFileChange}
+                />
                 <div className="author-submit__upload-icon">
                   <Upload size={20} />
                 </div>
@@ -197,11 +280,21 @@ export default function AuthorSubmitPage() {
             </div>
 
             <div className="author-submit__actions">
-              <button type="button" className="author-submit__button author-submit__button--secondary">
-                Зберегти як чернетку
+              <button
+                type="button"
+                className="author-submit__button author-submit__button--secondary"
+                onClick={handleDraftSave}
+                disabled={loading}
+              >
+                {loading ? "Збереження..." : "Зберегти як чернетку"}
               </button>
-              <button type="submit" className="author-submit__button author-submit__button--primary">
-                Надіслати роботу
+
+              <button
+                type="submit"
+                className="author-submit__button author-submit__button--primary"
+                disabled={loading}
+              >
+                {loading ? "Надсилання..." : "Надіслати роботу"}
               </button>
             </div>
           </form>
