@@ -54,3 +54,54 @@ export async function getMySubmissions() {
     throw new Error("Сервер повернув некоректну відповідь");
   }
 }
+
+export async function getSubmissionById(id: string) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(buildUrl(`/submissions/${id}`), {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const text = await res.text();
+
+  try {
+    const data = JSON.parse(text);
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to fetch submission");
+    }
+
+    return data;
+  } catch {
+    throw new Error("Сервер повернув некоректну відповідь");
+  }
+}
+
+export async function updateSubmission(id: string, payload: any) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(buildUrl(`/submissions/${id}`), {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+
+  try {
+    const data = JSON.parse(text);
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to update submission");
+    }
+
+    return data;
+  } catch {
+    throw new Error("Сервер повернув некоректну відповідь");
+  }
+}

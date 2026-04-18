@@ -10,8 +10,10 @@ import UnauthorizedPage from "../pages/UnauthorizedPage";
 import ProtectedRoute from "../features/auth/ProtectedRoute";
 import AuthorDashboard from "../pages/AuthorDashboard";
 import AuthorSubmitPage from "../pages/AuthorSubmitPage";
+import AuthorSubmissionDetailsPage from "../pages/AuthorSubmissionDetailsPage";
 import ReviewerDashboard from "../pages/ReviewerDashboard";
 import CommitteeDashboard from "../pages/CommitteeDashboard";
+import JournalsPage from "../pages/JournalsPage";
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +24,7 @@ export const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
       { path: "unauthorized", element: <UnauthorizedPage /> },
+      { path: "journals", element: <JournalsPage /> },
 
       // AUTHOR only
       {
@@ -29,6 +32,8 @@ export const router = createBrowserRouter([
         children: [
           { path: "author", element: <AuthorDashboard /> },
           { path: "author/submit", element: <AuthorSubmitPage /> },
+          { path: "author/submission/:id", element: <AuthorSubmissionDetailsPage /> },
+          { path: "author/edit/:id", element: <AuthorSubmitPage /> },
         ],
       },
 

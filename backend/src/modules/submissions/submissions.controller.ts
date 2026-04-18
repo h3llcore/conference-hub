@@ -1,6 +1,11 @@
 import type { Request, Response } from "express";
 import { SubmissionStatus } from "@prisma/client";
-import { createSubmission, getMySubmissions } from "./submissions.service.js";
+import {
+  createSubmission,
+  getMySubmissions,
+  getSubmissionById,
+  updateSubmission,
+} from "./submissions.service.js";
 
 export async function createSubmissionHandler(req: Request, res: Response) {
   try {
@@ -35,6 +40,50 @@ export async function getMySubmissionsHandler(req: Request, res: Response) {
     const submissions = await getMySubmissions(userId);
 
     return res.json({ submissions });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getSubmissionByIdHandler(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.sub;
+    const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const submission = await getSubmissionById(id, userId);
+
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    return res.json({ submission });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function updateSubmissionHandler(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.sub;
+    const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const submission = await updateSubmission(id, userId, req.body);
+
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    return res.json({ submission });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Server error" });
