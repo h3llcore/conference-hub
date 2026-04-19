@@ -7,6 +7,7 @@ import {
   getSubmissionById,
   updateSubmission,
 } from "../features/submissions/submissions.api";
+import { getVenues } from "../features/venues/venues.api";
 
 type SubmitForm = {
   title: string;
@@ -31,6 +32,13 @@ type SubmissionResponse = {
   status: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "ACCEPTED" | "REJECTED";
 };
 
+type Venue = {
+  id: string;
+  title: string;
+  description?: string;
+  type: "JOURNAL" | "CONFERENCE";
+};
+
 const initialForm: SubmitForm = {
   title: "",
   abstract: "",
@@ -51,8 +59,38 @@ export default function AuthorSubmitPage() {
   const [fileName, setFileName] = useState("");
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(isEditMode);
+  const [venuesLoading, setVenuesLoading] = useState(false);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadVenuesList() {
+      try {
+        setVenuesLoading(true);
+        const data = await getVenues();
+        const items = data.venues || [];
+
+        if (isMounted) {
+          setVenues(items);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (isMounted) {
+          setVenuesLoading(false);
+        }
+      }
+    }
+
+    loadVenuesList();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -73,7 +111,8 @@ export default function AuthorSubmitPage() {
           title: submission.title || "",
           abstract: submission.abstract || "",
           keywords: submission.keywords || "",
-          venueType: submission.venueType === "JOURNAL" ? "journal" : "conference",
+          venueType:
+            submission.venueType === "JOURNAL" ? "journal" : "conference",
           venue: submission.venue || "",
           coAuthors: submission.coAuthors || "",
           notes: submission.notes || "",
@@ -98,13 +137,16 @@ export default function AuthorSubmitPage() {
   }, [id]);
 
   function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) {
     const { name, value } = event.target;
 
     setForm((prev) => ({
       ...prev,
       [name]: value,
+      ...(name === "venueType" ? { venue: "" } : {}),
     }));
   }
 
@@ -169,7 +211,10 @@ export default function AuthorSubmitPage() {
       }, 1200);
     } catch (e: any) {
       setError(
-        e.message || (isEditMode ? "Не вдалося оновити подання." : "Не вдалося подати роботу.")
+        e.message ||
+          (isEditMode
+            ? "Не вдалося оновити подання."
+            : "Не вдалося подати роботу."),
       );
     } finally {
       setLoading(false);
@@ -194,17 +239,23 @@ export default function AuthorSubmitPage() {
         await createSubmission(buildPayload("DRAFT"));
         setSuccess("Чернетку успішно збережено.");
       }
-      setTimeout(() => {
-        navigate("/author");
-      }, 1200);
     } catch (e: any) {
       setError(
-        e.message || (isEditMode ? "Не вдалося оновити чернетку." : "Не вдалося зберегти чернетку.")
+        e.message ||
+          (isEditMode
+            ? "Не вдалося оновити чернетку."
+            : "Не вдалося зберегти чернетку."),
       );
     } finally {
       setLoading(false);
     }
   }
+
+  const filteredVenues = venues.filter((item) =>
+    form.venueType === "journal"
+      ? item.type === "JOURNAL"
+      : item.type === "CONFERENCE",
+  );
 
   return (
     <section className="author-submit">
@@ -302,20 +353,30 @@ export default function AuthorSubmitPage() {
 
                   <div className="author-submit__field">
                     <label htmlFor="venue">Журнал / конференція *</label>
-                    <select id="venue" name="venue" value={form.venue} onChange={handleChange}>
-                      <option value="">Оберіть варіант</option>
-                      <option value="Журнал комп’ютерних наук">Журнал комп’ютерних наук</option>
-                      <option value="Інформаційні системи та технології">
-                        Інформаційні системи та технології
+                    <select
+                      id="venue"
+                      name="venue"
+                      value={form.venue}
+                      onChange={handleChange}
+                      disabled={venuesLoading}
+                    >
+                      <option value="">
+                        {venuesLoading ? "Завантаження..." : "Оберіть варіант"}
                       </option>
-                      <option value="Digital Science 2026">Digital Science 2026</option>
-                      <option value="AI in Education Summit">AI in Education Summit</option>
+
+                      {filteredVenues.map((item) => (
+                        <option key={item.id} value={item.title}>
+                          {item.title}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
                 <div className="author-submit__field">
-                  <label htmlFor="notes">Примітки для редактора / оргкомітету</label>
+                  <label htmlFor="notes">
+                    Примітки для редактора / оргкомітету
+                  </label>
                   <textarea
                     id="notes"
                     name="notes"
@@ -330,7 +391,12 @@ export default function AuthorSubmitPage() {
                   <label htmlFor="file">Файл роботи *</label>
 
                   <label className="author-submit__upload-box" htmlFor="file">
-                    <input id="file" type="file" hidden onChange={handleFileChange} />
+                    <input
+                      id="file"
+                      type="file"
+                      hidden
+                      onChange={handleFileChange}
+                    />
                     <div className="author-submit__upload-icon">
                       <Upload size={20} />
                     </div>

@@ -12,31 +12,6 @@ type Venue = {
   deadline?: string;
 };
 
-// MOCK дані (на випадок, якщо backend буде пустий)
-const MOCK_JOURNALS: Venue[] = [
-  {
-    id: "1",
-    title: "Журнал комп’ютерних наук",
-    description: "Публікації з інформатики, ШІ та цифрових технологій",
-    type: "JOURNAL",
-    deadline: "2026-05-20",
-  },
-  {
-    id: "2",
-    title: "Інформаційні системи та технології",
-    description: "Наукові матеріали з ІТ та системного аналізу",
-    type: "JOURNAL",
-    deadline: "2026-06-10",
-  },
-  {
-    id: "3",
-    title: "Digital Science Review",
-    description: "Сучасні дослідження цифрових платформ і наукових сервісів",
-    type: "JOURNAL",
-    deadline: "2026-07-01",
-  },
-];
-
 export default function JournalsPage() {
   const [journals, setJournals] = useState<Venue[]>([]);
   const [search, setSearch] = useState("");
@@ -52,24 +27,17 @@ export default function JournalsPage() {
         setLoading(true);
         setError("");
 
-        const data = await getVenues();
-        const rawItems = data.venues || data.items || data.data || [];
-
-        const onlyJournals = rawItems.filter((item: Venue) => item.type === "JOURNAL");
+        const data = await getVenues({
+          type: "JOURNAL",
+          sort: "newest",
+        });
 
         if (isMounted) {
-          // 🔥 якщо backend пустий — беремо mock
-          if (onlyJournals.length === 0) {
-            setJournals(MOCK_JOURNALS);
-          } else {
-            setJournals(onlyJournals);
-          }
+          setJournals(data.venues || []);
         }
       } catch (e: any) {
-        // 🔥 якщо помилка — теж fallback на mock
         if (isMounted) {
-          setError("Показано тестові дані (сервер недоступний)");
-          setJournals(MOCK_JOURNALS);
+          setError(e.message || "Не вдалося завантажити журнали.");
         }
       } finally {
         if (isMounted) {
@@ -104,11 +72,15 @@ export default function JournalsPage() {
         <p className="journals-page__eyebrow">Каталог журналів</p>
         <h1 className="journals-page__title">Пошук наукових журналів</h1>
         <p className="journals-page__description">
-          Знайдіть журнал за назвою або коротким описом і перегляньте доступні видання для подання
-          матеріалів.
+          Знайдіть журнал за назвою або коротким описом і перегляньте доступні
+          видання для подання матеріалів.
         </p>
 
-        <button type="button" className="journals-page__back" onClick={() => navigate(-1)}>
+        <button
+          type="button"
+          className="journals-page__back"
+          onClick={() => navigate(-1)}
+        >
           <span className="journals-page__back-arrow">←</span>
           <span>Назад</span>
         </button>
@@ -127,17 +99,23 @@ export default function JournalsPage() {
       </div>
 
       <div className="journals-page__content">
-        {loading && <div className="journals-page__state">Завантаження журналів...</div>}
+        {loading && (
+          <div className="journals-page__state">Завантаження журналів...</div>
+        )}
 
         {!loading && error && (
-          <div className="journals-page__state journals-page__state--error">{error}</div>
+          <div className="journals-page__state journals-page__state--error">
+            {error}
+          </div>
         )}
 
-        {!loading && filteredJournals.length === 0 && (
-          <div className="journals-page__state">Нічого не знайдено за вашим запитом.</div>
+        {!loading && !error && filteredJournals.length === 0 && (
+          <div className="journals-page__state">
+            Нічого не знайдено за вашим запитом.
+          </div>
         )}
 
-        {!loading && filteredJournals.length > 0 && (
+        {!loading && !error && filteredJournals.length > 0 && (
           <div className="journals-page__grid">
             {filteredJournals.map((journal) => (
               <article key={journal.id} className="journals-page__card">
@@ -151,7 +129,8 @@ export default function JournalsPage() {
 
                 {journal.deadline && (
                   <p className="journals-page__deadline">
-                    Дедлайн: {new Date(journal.deadline).toLocaleDateString("uk-UA")}
+                    Дедлайн:{" "}
+                    {new Date(journal.deadline).toLocaleDateString("uk-UA")}
                   </p>
                 )}
               </article>
