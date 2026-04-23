@@ -13,6 +13,11 @@ export async function assignReviewersToSubmission(
 
   const submission = await prisma.submission.findUnique({
     where: { id: submissionId },
+    select: {
+      id: true,
+      currentRound: true,
+      status: true,
+    },
   });
 
   if (!submission) {
@@ -37,22 +42,54 @@ export async function assignReviewersToSubmission(
     throw error;
   }
 
+  const currentRoundAssignments = await prisma.submissionReviewer.findMany({
+    where: {
+      submissionId,
+      round: submission.currentRound,
+      reviewerId: { in: uniqueReviewerIds },
+    },
+    select: {
+      reviewerId: true,
+    },
+  });
+
+  if (currentRoundAssignments.length > 0) {
+    const error = new Error(
+      "One or more selected reviewers are already assigned in the current round",
+    );
+    (error as any).status = 409;
+    throw error;
+  }
+
+  const incompletePreviousRoundAssignments =
+    await prisma.submissionReviewer.findMany({
+      where: {
+        submissionId,
+        reviewerId: { in: uniqueReviewerIds },
+        round: { lt: submission.currentRound },
+        status: {
+          not: AssignmentStatus.COMPLETED,
+        },
+      },
+      select: {
+        reviewerId: true,
+        round: true,
+        status: true,
+      },
+    });
+
+  if (incompletePreviousRoundAssignments.length > 0) {
+    const error = new Error(
+      "One or more selected reviewers have not completed a previous round",
+    );
+    (error as any).status = 409;
+    throw error;
+  }
+
   await prisma.$transaction(async (tx) => {
     for (const reviewerId of uniqueReviewerIds) {
-      await tx.submissionReviewer.upsert({
-        where: {
-          submissionId_reviewerId_round: {
-            submissionId,
-            reviewerId,
-            round: submission.currentRound,
-          },
-        },
-        update: {
-          status: AssignmentStatus.ASSIGNED,
-          assignedAt: new Date(),
-          updatedAt: new Date(),
-        },
-        create: {
+      await tx.submissionReviewer.create({
+        data: {
           submissionId,
           reviewerId,
           round: submission.currentRound,
@@ -72,7 +109,6 @@ export async function assignReviewersToSubmission(
   return prisma.submissionReviewer.findMany({
     where: {
       submissionId,
-      round: submission.currentRound,
     },
     include: {
       reviewer: {
@@ -87,7 +123,7 @@ export async function assignReviewersToSubmission(
         },
       },
     },
-    orderBy: { assignedAt: "desc" },
+    orderBy: [{ round: "desc" }, { assignedAt: "desc" }],
   });
 }
 

@@ -6,7 +6,10 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { getMyReviewerAssignments } from "../features/assignments/assignments.api";
+import {
+  getMyReviewerAssignments,
+  takeAssignmentIntoWork,
+} from "../features/assignments/assignments.api";
 import "../styles/reviewer-dashboard.css";
 
 type ReviewerSubmission = {
@@ -43,7 +46,7 @@ type ReviewerAssignment = {
 function formatAssignmentStatus(status: ReviewerAssignment["status"]) {
   if (status === "ASSIGNED") return "Призначено";
   if (status === "IN_PROGRESS") return "У роботі";
-  if (status === "COMPLETED") return "Завершено";
+  if (status === "COMPLETED") return "Рецензію подано";
   return status;
 }
 
@@ -67,6 +70,7 @@ export default function ReviewerDashboard() {
   const [assignments, setAssignments] = useState<ReviewerAssignment[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [takingId, setTakingId] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -99,6 +103,31 @@ export default function ReviewerDashboard() {
       isMounted = false;
     };
   }, []);
+
+  async function handleTakeIntoWork(assignmentId: string) {
+    try {
+      setTakingId(assignmentId);
+      setError("");
+
+      const data = await takeAssignmentIntoWork(assignmentId);
+
+      setAssignments((prev) =>
+        prev.map((item) =>
+          item.id === assignmentId
+            ? {
+                ...item,
+                status: data.assignment.status,
+                updatedAt: data.assignment.updatedAt,
+              }
+            : item,
+        ),
+      );
+    } catch (e: any) {
+      setError(e.message || "Не вдалося взяти статтю в роботу.");
+    } finally {
+      setTakingId("");
+    }
+  }
 
   const filteredAssignments = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -253,6 +282,16 @@ export default function ReviewerDashboard() {
                   </p>
 
                   <div className="reviewer-dashboard__actions">
+                    {item.status === "ASSIGNED" && (
+                      <button
+                        type="button"
+                        onClick={() => handleTakeIntoWork(item.id)}
+                        disabled={takingId === item.id}
+                      >
+                        {takingId === item.id ? "Оновлення..." : "Взяти в роботу"}
+                      </button>
+                    )}
+
                     <Link
                       to={`/reviewer/review/${item.submission.id}`}
                       className="reviewer-dashboard__link-button"

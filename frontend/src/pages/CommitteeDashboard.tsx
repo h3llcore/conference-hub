@@ -1,7 +1,21 @@
-import { CheckCircle2, Eye, FileText, RotateCcw, Search, Users, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Eye,
+  FileText,
+  RotateCcw,
+  Search,
+  Users,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { getCommitteeSubmissions, updateReviewerSubmissionStatus } from "../features/submissions/submissions.api";
-import { assignReviewers, getAssignmentsBySubmission } from "../features/assignments/assignments.api";
+import {
+  getCommitteeSubmissions,
+  updateReviewerSubmissionStatus,
+} from "../features/submissions/submissions.api";
+import {
+  assignReviewers,
+  getAssignmentsBySubmission,
+} from "../features/assignments/assignments.api";
 import { getCommitteeSubmissionReviews } from "../features/reviews/reviews.api";
 import { getReviewers } from "../features/users/users.api";
 import "../styles/committee-dashboard.css";
@@ -89,7 +103,7 @@ function formatDecision(decision: string) {
 function formatAssignmentStatus(status: string) {
   if (status === "ASSIGNED") return "Призначено";
   if (status === "IN_PROGRESS") return "У роботі";
-  if (status === "COMPLETED") return "Завершено";
+  if (status === "COMPLETED") return "Рецензію подано";
   return status;
 }
 
@@ -104,7 +118,8 @@ export default function CommitteeDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [selectedSubmission, setSelectedSubmission] =
+    useState<Submission | null>(null);
   const [selectedReviewerIds, setSelectedReviewerIds] = useState<string[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [reviews, setReviews] = useState<CommitteeReview[]>([]);
@@ -180,6 +195,77 @@ export default function CommitteeDashboard() {
     });
   }
 
+  function isReviewerAssignedInCurrentRound(reviewerId: string) {
+    if (!selectedSubmission) return false;
+
+    return assignments.some(
+      (item) =>
+        item.reviewer.id === reviewerId &&
+        item.round === selectedSubmission.currentRound,
+    );
+  }
+
+  function hasReviewerIncompletePreviousRound(reviewerId: string) {
+    if (!selectedSubmission) return false;
+
+    return assignments.some(
+      (item) =>
+        item.reviewer.id === reviewerId &&
+        item.round < selectedSubmission.currentRound &&
+        item.status !== "COMPLETED",
+    );
+  }
+
+  function getReviewerDisableReason(reviewerId: string) {
+    if (isReviewerAssignedInCurrentRound(reviewerId)) {
+      return "уже призначено в цьому раунді";
+    }
+
+    if (hasReviewerIncompletePreviousRound(reviewerId)) {
+      return "не завершив попередній раунд";
+    }
+
+    return "";
+  }
+
+  function getCurrentRoundAssignments(submission: Submission) {
+    if (selectedSubmission?.id !== submission.id) {
+      return [];
+    }
+
+    return assignments.filter(
+      (item) => item.round === submission.currentRound,
+    );
+  }
+
+  function canMakeCommitteeDecision(submission: Submission) {
+    const currentRoundAssignments = getCurrentRoundAssignments(submission);
+
+    if (currentRoundAssignments.length === 0) {
+      return false;
+    }
+
+    return currentRoundAssignments.every((item) => item.status === "COMPLETED");
+  }
+
+  function getDecisionDisabledMessage(submission: Submission) {
+    const currentRoundAssignments = getCurrentRoundAssignments(submission);
+
+    if (currentRoundAssignments.length === 0) {
+      return "Спочатку призначте рецензентів.";
+    }
+
+    const unfinishedCount = currentRoundAssignments.filter(
+      (item) => item.status !== "COMPLETED",
+    ).length;
+
+    if (unfinishedCount > 0) {
+      return `Неможливо прийняти рішення: ще ${unfinishedCount} рецензент(и) перевіряють роботу.`;
+    }
+
+    return "";
+  }
+
   async function handleAssignReviewers() {
     if (!selectedSubmission || selectedReviewerIds.length === 0) {
       return;
@@ -189,18 +275,17 @@ export default function CommitteeDashboard() {
       setAssignLoading(true);
       setError("");
 
-      const data = await assignReviewers({
+      await assignReviewers({
         submissionId: selectedSubmission.id,
         reviewerIds: selectedReviewerIds,
       });
 
-      setAssignments(data.assignments || []);
-      setSelectedReviewerIds([]);
-
       const refreshedAssignments = await getAssignmentsBySubmission(
         selectedSubmission.id,
       );
+
       setAssignments(refreshedAssignments.assignments || []);
+      setSelectedReviewerIds([]);
 
       setSubmissions((prev) =>
         prev.map((item) =>
@@ -316,82 +401,109 @@ export default function CommitteeDashboard() {
 
           {!loading && filteredSubmissions.length > 0 && (
             <div className="committee-dashboard__list">
-              {filteredSubmissions.map((item) => (
-                <article key={item.id} className="committee-dashboard__card">
-                  <div className="committee-dashboard__card-top">
-                    <div>
-                      <h3>{item.title}</h3>
-                      <p>
-                        {item.author
-                          ? `${item.author.firstName} ${item.author.lastName} • ${item.author.institution}`
-                          : "Автор не вказаний"}
-                      </p>
+              {filteredSubmissions.map((item) => {
+                const isSelected = selectedSubmission?.id === item.id;
+                const decisionDisabled = !canMakeCommitteeDecision(item);
+                const disabledMessage = getDecisionDisabledMessage(item);
+
+                return (
+                  <article key={item.id} className="committee-dashboard__card">
+                    <div className="committee-dashboard__card-top">
+                      <div>
+                        <h3>{item.title}</h3>
+                        <p>
+                          {item.author
+                            ? `${item.author.firstName} ${item.author.lastName} • ${item.author.institution}`
+                            : "Автор не вказаний"}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`committee-dashboard__status ${
+                          item.status === "REVISION_REQUIRED"
+                            ? "committee-dashboard__status--revision"
+                            : ""
+                        }`}
+                      >
+                        {formatStatus(item.status)}
+                      </span>
                     </div>
 
-                    <span className="committee-dashboard__status">
-                      {formatStatus(item.status)}
-                    </span>
-                  </div>
+                    <div className="committee-dashboard__meta">
+                      <span>
+                        Тип:{" "}
+                        {item.venueType === "JOURNAL"
+                          ? "Науковий журнал"
+                          : "Конференція"}
+                      </span>
+                      <span>{item.venue}</span>
+                      <span>Версія: {item.version}</span>
+                      <span>Раунд: {item.currentRound}</span>
+                      <span>Дата подання: {formatDate(item.createdAt)}</span>
+                      {item.fileName && <span>Файл: {item.fileName}</span>}
+                    </div>
 
-                  <div className="committee-dashboard__meta">
-                    <span>
-                      Тип:{" "}
-                      {item.venueType === "JOURNAL"
-                        ? "Науковий журнал"
-                        : "Конференція"}
-                    </span>
-                    <span>{item.venue}</span>
-                    <span>Версія: {item.version}</span>
-                    <span>Раунд: {item.currentRound}</span>
-                    <span>Дата подання: {formatDate(item.createdAt)}</span>
-                    {item.fileName && <span>Файл: {item.fileName}</span>}
-                  </div>
+                    <p className="committee-dashboard__excerpt">
+                      {item.abstract}
+                    </p>
 
-                  <p className="committee-dashboard__excerpt">{item.abstract}</p>
+                    <div className="committee-dashboard__actions">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSubmission(item)}
+                      >
+                        <Eye size={16} />
+                        <span>Відкрити</span>
+                      </button>
 
-                  <div className="committee-dashboard__actions">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectSubmission(item)}
-                    >
-                      <Eye size={16} />
-                      <span>Відкрити</span>
-                    </button>
+                      {decisionDisabled && isSelected && (
+                        <div className="committee-dashboard__decision-warning">
+                          {disabledMessage}
+                        </div>
+                      )}
 
-                    <button
-                      type="button"
-                      className="committee-dashboard__action committee-dashboard__action--revision"
-                      disabled={actionLoadingId === item.id}
-                      onClick={() =>
-                        handleCommitteeDecision(item.id, "REVISION_REQUIRED")
-                      }
-                    >
-                      <RotateCcw size={16} />
-                      <span>На доопрацювання</span>
-                    </button>
+                      <button
+                        type="button"
+                        className="committee-dashboard__action committee-dashboard__action--revision"
+                        disabled={decisionDisabled || actionLoadingId === item.id}
+                        title={decisionDisabled ? disabledMessage : ""}
+                        onClick={() =>
+                          handleCommitteeDecision(item.id, "REVISION_REQUIRED")
+                        }
+                      >
+                        <RotateCcw size={16} />
+                        <span>На доопрацювання</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      className="committee-dashboard__action committee-dashboard__action--accept"
-                      disabled={actionLoadingId === item.id}
-                      onClick={() => handleCommitteeDecision(item.id, "ACCEPTED")}
-                    >
-                      <CheckCircle2 size={16} />
-                      <span>Прийняти</span>
-                    </button>
+                      <button
+                        type="button"
+                        className="committee-dashboard__action committee-dashboard__action--accept"
+                        disabled={decisionDisabled || actionLoadingId === item.id}
+                        title={decisionDisabled ? disabledMessage : ""}
+                        onClick={() =>
+                          handleCommitteeDecision(item.id, "ACCEPTED")
+                        }
+                      >
+                        <CheckCircle2 size={16} />
+                        <span>Прийняти</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      className="committee-dashboard__action committee-dashboard__action--reject"
-                      disabled={actionLoadingId === item.id}
-                      onClick={() => handleCommitteeDecision(item.id, "REJECTED")}
-                    >
-                      <XCircle size={16} />
-                      <span>Відхилити</span>
-                    </button>
-                  </div>
-                </article>
-              ))}
+                      <button
+                        type="button"
+                        className="committee-dashboard__action committee-dashboard__action--reject"
+                        disabled={decisionDisabled || actionLoadingId === item.id}
+                        title={decisionDisabled ? disabledMessage : ""}
+                        onClick={() =>
+                          handleCommitteeDecision(item.id, "REJECTED")
+                        }
+                      >
+                        <XCircle size={16} />
+                        <span>Відхилити</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </main>
@@ -408,7 +520,9 @@ export default function CommitteeDashboard() {
             )}
 
             {detailsLoading && (
-              <div className="committee-dashboard__state">Завантаження деталей...</div>
+              <div className="committee-dashboard__state">
+                Завантаження деталей...
+              </div>
             )}
 
             {!detailsLoading && selectedSubmission && (
@@ -430,7 +544,8 @@ export default function CommitteeDashboard() {
                     {selectedSubmission.author?.institution || "—"}
                   </p>
                   <p>
-                    <strong>Журнал / конференція:</strong> {selectedSubmission.venue}
+                    <strong>Журнал / конференція:</strong>{" "}
+                    {selectedSubmission.venue}
                   </p>
                   <p>
                     <strong>Версія:</strong> {selectedSubmission.version}
@@ -439,7 +554,8 @@ export default function CommitteeDashboard() {
                     <strong>Раунд:</strong> {selectedSubmission.currentRound}
                   </p>
                   <p>
-                    <strong>Файл:</strong> {selectedSubmission.fileName || "Не вказано"}
+                    <strong>Файл:</strong>{" "}
+                    {selectedSubmission.fileName || "Не вказано"}
                   </p>
                 </div>
 
@@ -454,21 +570,32 @@ export default function CommitteeDashboard() {
                   </p>
 
                   <div className="committee-dashboard__reviewers">
-                    {reviewers.map((reviewer) => (
-                      <label
-                        key={reviewer.id}
-                        className="committee-dashboard__reviewer-item"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedReviewerIds.includes(reviewer.id)}
-                          onChange={() => handleToggleReviewer(reviewer.id)}
-                        />
-                        <span>
-                          {reviewer.firstName} {reviewer.lastName}
-                        </span>
-                      </label>
-                    ))}
+                    {reviewers.map((reviewer) => {
+                      const reason = getReviewerDisableReason(reviewer.id);
+                      const disabled = Boolean(reason);
+
+                      return (
+                        <label
+                          key={reviewer.id}
+                          className={`committee-dashboard__reviewer-item ${
+                            disabled
+                              ? "committee-dashboard__reviewer-item--disabled"
+                              : ""
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedReviewerIds.includes(reviewer.id)}
+                            onChange={() => handleToggleReviewer(reviewer.id)}
+                            disabled={disabled}
+                          />
+                          <span>
+                            {reviewer.firstName} {reviewer.lastName}
+                            {reason ? ` • ${reason}` : ""}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
 
                   <button
@@ -477,18 +604,26 @@ export default function CommitteeDashboard() {
                     onClick={handleAssignReviewers}
                     disabled={assignLoading || selectedReviewerIds.length === 0}
                   >
-                    {assignLoading ? "Призначення..." : "Призначити рецензентів"}
+                    {assignLoading
+                      ? "Призначення..."
+                      : "Призначити рецензентів"}
                   </button>
 
                   <div className="committee-dashboard__assigned-list">
                     <h4>Призначення по раундах:</h4>
 
-                    {assignments.length === 0 && <p>Рецензентів ще не призначено.</p>}
+                    {assignments.length === 0 && (
+                      <p>Рецензентів ще не призначено.</p>
+                    )}
 
                     {assignments.map((item) => (
-                      <div key={item.id} className="committee-dashboard__assigned-item">
+                      <div
+                        key={item.id}
+                        className="committee-dashboard__assigned-item"
+                      >
                         <span>
-                          {item.reviewer.firstName} {item.reviewer.lastName} • Раунд {item.round}
+                          {item.reviewer.firstName} {item.reviewer.lastName} •
+                          Раунд {item.round}
                         </span>
                         <strong>{formatAssignmentStatus(item.status)}</strong>
                       </div>
@@ -505,16 +640,20 @@ export default function CommitteeDashboard() {
                   {reviews.length === 0 && <p>Рецензій поки немає.</p>}
 
                   {reviews.map((review) => (
-                    <article key={review.id} className="committee-dashboard__review-card">
+                    <article
+                      key={review.id}
+                      className="committee-dashboard__review-card"
+                    >
                       <p>
-                        <strong>Рецензент:</strong> {review.reviewer.firstName}{" "}
-                        {review.reviewer.lastName}
+                        <strong>Рецензент:</strong>{" "}
+                        {review.reviewer.firstName} {review.reviewer.lastName}
                       </p>
                       <p>
                         <strong>Раунд:</strong> {review.round}
                       </p>
                       <p>
-                        <strong>Рішення:</strong> {formatDecision(review.decision)}
+                        <strong>Рішення:</strong>{" "}
+                        {formatDecision(review.decision)}
                       </p>
                       <p>
                         <strong>Коментарі:</strong> {review.comments || "—"}

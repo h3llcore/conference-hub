@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getAuthorSubmissionReviews } from "../features/reviews/reviews.api";
 import "../styles/author-reviews.css";
 
 type AuthorReview = {
   id: string;
+  round: number;
   titleScore: string;
   relevanceScore: string;
   abstractScore: string;
@@ -82,6 +83,13 @@ export default function AuthorReviewsPage() {
     };
   }, [id]);
 
+  const sortedReviews = useMemo(() => {
+    return [...reviews].sort((a, b) => {
+      if (b.round !== a.round) return b.round - a.round;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [reviews]);
+
   return (
     <section className="author-reviews">
       <div className="author-reviews__hero">
@@ -103,18 +111,18 @@ export default function AuthorReviewsPage() {
           </div>
         )}
 
-        {!loading && !error && reviews.length === 0 && (
+        {!loading && !error && sortedReviews.length === 0 && (
           <div className="author-reviews__state">
             Для цього подання рецензій поки немає.
           </div>
         )}
 
-        {!loading && !error && reviews.length > 0 && (
+        {!loading && !error && sortedReviews.length > 0 && (
           <div className="author-reviews__list">
-            {reviews.map((review, index) => (
+            {sortedReviews.map((review) => (
               <article key={review.id} className="author-reviews__card">
                 <div className="author-reviews__card-header">
-                  <h2>Рецензія #{index + 1}</h2>
+                  <h2>Раунд {review.round}</h2>
                   <span>{formatDate(review.createdAt)}</span>
                 </div>
 

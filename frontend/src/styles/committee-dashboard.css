@@ -326,3 +326,33 @@
     align-items: flex-start;
   }
 }
+
+.committee-dashboard__reviewer-item--disabled {
+  opacity: 0.6;
+}
+
+.committee-dashboard__status--revision {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+}
+
+.committee-dashboard__reviewer-item--disabled {
+  opacity: 0.6;
+}
+
+.committee-dashboard__actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.committee-dashboard__decision-warning {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+  font-size: 13px;
+  font-weight: 600;
+}

@@ -390,3 +390,9 @@
 .author-dashboard__submission-actions a:hover {
   background: #eef2f7;
 }
+
+.author-dashboard__status--revision {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+}

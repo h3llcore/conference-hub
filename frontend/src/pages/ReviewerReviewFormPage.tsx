@@ -8,7 +8,7 @@ import {
   type ReviewDecision,
   type ReviewScore,
 } from "../features/reviews/reviews.api";
-import { getMyReviewerAssignments, takeAssignmentIntoWork } from "../features/assignments/assignments.api";
+import { getMyReviewerAssignments } from "../features/assignments/assignments.api";
 import "../styles/reviewer-review-form.css";
 
 type ReviewerSubmission = {
@@ -84,9 +84,7 @@ export default function ReviewerReviewFormPage() {
   const [form, setForm] = useState<ReviewForm>(initialForm);
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [startingWork, setStartingWork] = useState(false);
   const [currentRound, setCurrentRound] = useState<number>(1);
-  const [assignmentId, setAssignmentId] = useState<string>("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -118,7 +116,6 @@ export default function ReviewerReviewFormPage() {
 
         if (currentAssignment) {
           setCurrentRound(currentAssignment.round);
-          setAssignmentId(currentAssignment.id);
         }
 
         if (reviewData.review) {
@@ -165,23 +162,6 @@ export default function ReviewerReviewFormPage() {
     }));
   }
 
-  async function handleTakeIntoWork() {
-    if (!assignmentId) return;
-
-    try {
-      setStartingWork(true);
-      setError("");
-      setSuccess("");
-
-      await takeAssignmentIntoWork(assignmentId);
-      setSuccess("Статтю взято в роботу.");
-    } catch (e: any) {
-      setError(e.message || "Не вдалося взяти статтю в роботу.");
-    } finally {
-      setStartingWork(false);
-    }
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -197,7 +177,7 @@ export default function ReviewerReviewFormPage() {
         ...form,
       });
 
-      setSuccess("Рецензію успішно збережено.");
+      setSuccess("Рецензію успішно подано комітету.");
     } catch (e: any) {
       setError(e.message || "Не вдалося зберегти рецензію.");
     } finally {
@@ -248,17 +228,6 @@ export default function ReviewerReviewFormPage() {
                     </p>
                     <p>Раунд рецензування: {currentRound}</p>
                   </div>
-                </div>
-
-                <div className="review-form-page__actions review-form-page__actions--top">
-                  <button
-                    type="button"
-                    className="review-form-page__button review-form-page__button--secondary"
-                    onClick={handleTakeIntoWork}
-                    disabled={startingWork}
-                  >
-                    {startingWork ? "Оновлення..." : "Взяти в роботу"}
-                  </button>
                 </div>
 
                 <div className="review-form-page__grid">
@@ -461,7 +430,7 @@ export default function ReviewerReviewFormPage() {
                     className="review-form-page__button review-form-page__button--primary"
                     disabled={saving}
                   >
-                    {saving ? "Збереження..." : "Зберегти рецензію"}
+                    {saving ? "Збереження..." : "Подати рецензію"}
                   </button>
                 </div>
               </>

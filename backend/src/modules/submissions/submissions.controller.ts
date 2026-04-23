@@ -27,9 +27,11 @@ export async function createSubmissionHandler(req: Request, res: Response) {
     const submission = await createSubmission(userId, req.body, status);
 
     return res.status(201).json({ submission });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
   }
 }
 
@@ -44,9 +46,11 @@ export async function getMySubmissionsHandler(req: Request, res: Response) {
     const submissions = await getMySubmissions(userId);
 
     return res.json({ submissions });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
   }
 }
 
@@ -66,9 +70,11 @@ export async function getSubmissionByIdHandler(req: Request, res: Response) {
     }
 
     return res.json({ submission });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
   }
 }
 
@@ -88,9 +94,11 @@ export async function updateSubmissionHandler(req: Request, res: Response) {
     }
 
     return res.json({ submission });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
   }
 }
 
@@ -101,9 +109,11 @@ export async function getReviewerSubmissionsHandler(
   try {
     const submissions = await getReviewerSubmissions();
     return res.json({ submissions });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
   }
 }
 
@@ -114,9 +124,11 @@ export async function getCommitteeSubmissionsHandler(
   try {
     const submissions = await getCommitteeSubmissions();
     return res.json({ submissions });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
   }
 }
 
@@ -134,9 +146,11 @@ export async function getReviewerSubmissionByIdHandler(
     }
 
     return res.json({ submission });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
   }
 }
 
@@ -183,8 +197,10 @@ export async function updateSubmissionStatusHandler(
     }
 
     return res.json({ submission });
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
   }
 }

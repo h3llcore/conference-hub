@@ -21,33 +21,40 @@ type ReviewPayload = {
   decision: ReviewDecision;
 };
 
+async function findReviewerActiveAssignment(
+  submissionId: string,
+  reviewerId: string,
+) {
+  const activeAssignment = await prisma.submissionReviewer.findFirst({
+    where: {
+      submissionId,
+      reviewerId,
+      status: {
+        not: AssignmentStatus.COMPLETED,
+      },
+    },
+    orderBy: [{ round: "desc" }, { assignedAt: "desc" }],
+  });
+
+  if (activeAssignment) return activeAssignment;
+
+  return prisma.submissionReviewer.findFirst({
+    where: {
+      submissionId,
+      reviewerId,
+    },
+    orderBy: [{ round: "desc" }, { assignedAt: "desc" }],
+  });
+}
+
 export async function createOrUpdateReview(
   reviewerId: string,
   payload: ReviewPayload,
 ) {
-  const submission = await prisma.submission.findUnique({
-    where: { id: payload.submissionId },
-    select: {
-      id: true,
-      currentRound: true,
-    },
-  });
-
-  if (!submission) {
-    const error = new Error("Submission not found");
-    (error as any).status = 404;
-    throw error;
-  }
-
-  const assignment = await prisma.submissionReviewer.findUnique({
-    where: {
-      submissionId_reviewerId_round: {
-        submissionId: payload.submissionId,
-        reviewerId,
-        round: submission.currentRound,
-      },
-    },
-  });
+  const assignment = await findReviewerActiveAssignment(
+    payload.submissionId,
+    reviewerId,
+  );
 
   if (!assignment) {
     const error = new Error("Reviewer is not assigned to this submission");
@@ -60,7 +67,7 @@ export async function createOrUpdateReview(
       submissionId_reviewerId_round: {
         submissionId: payload.submissionId,
         reviewerId,
-        round: submission.currentRound,
+        round: assignment.round,
       },
     },
     update: {
@@ -80,7 +87,7 @@ export async function createOrUpdateReview(
     create: {
       submissionId: payload.submissionId,
       reviewerId,
-      round: submission.currentRound,
+      round: assignment.round,
       titleScore: payload.titleScore,
       relevanceScore: payload.relevanceScore,
       abstractScore: payload.abstractScore,
@@ -107,13 +114,7 @@ export async function createOrUpdateReview(
   });
 
   await prisma.submissionReviewer.update({
-    where: {
-      submissionId_reviewerId_round: {
-        submissionId: payload.submissionId,
-        reviewerId,
-        round: submission.currentRound,
-      },
-    },
+    where: { id: assignment.id },
     data: {
       status: AssignmentStatus.COMPLETED,
     },
@@ -170,14 +171,9 @@ export async function getMyReviewBySubmission(
   submissionId: string,
   reviewerId: string,
 ) {
-  const submission = await prisma.submission.findUnique({
-    where: { id: submissionId },
-    select: {
-      currentRound: true,
-    },
-  });
+  const assignment = await findReviewerActiveAssignment(submissionId, reviewerId);
 
-  if (!submission) {
+  if (!assignment) {
     return null;
   }
 
@@ -186,7 +182,7 @@ export async function getMyReviewBySubmission(
       submissionId_reviewerId_round: {
         submissionId,
         reviewerId,
-        round: submission.currentRound,
+        round: assignment.round,
       },
     },
   });

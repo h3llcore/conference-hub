@@ -1,5 +1,9 @@
 import { prisma } from "../../config/prisma.js";
-import { SubmissionStatus, VenueType } from "@prisma/client";
+import {
+  AssignmentStatus,
+  SubmissionStatus,
+  VenueType,
+} from "@prisma/client";
 
 export async function createSubmission(
   userId: string,
@@ -163,6 +167,53 @@ export async function getReviewerSubmissionById(submissionId: string) {
   });
 }
 
+async function assertCurrentRoundIsCompleted(submissionId: string) {
+  const submission = await prisma.submission.findUnique({
+    where: { id: submissionId },
+    select: {
+      id: true,
+      currentRound: true,
+    },
+  });
+
+  if (!submission) {
+    const error = new Error("Submission not found");
+    (error as any).status = 404;
+    throw error;
+  }
+
+  const currentRoundAssignments = await prisma.submissionReviewer.findMany({
+    where: {
+      submissionId,
+      round: submission.currentRound,
+    },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  if (currentRoundAssignments.length === 0) {
+    const error = new Error(
+      "Cannot make a final decision before assigning reviewers",
+    );
+    (error as any).status = 409;
+    throw error;
+  }
+
+  const hasIncompleteReview = currentRoundAssignments.some(
+    (assignment) => assignment.status !== AssignmentStatus.COMPLETED,
+  );
+
+  if (hasIncompleteReview) {
+    const error = new Error(
+      "Cannot make a final decision until all reviewers complete the current round",
+    );
+    (error as any).status = 409;
+    throw error;
+  }
+}
+
 export async function updateSubmissionStatus(
   submissionId: string,
   status: SubmissionStatus,
@@ -185,6 +236,15 @@ export async function updateSubmissionStatus(
 
   if (!existing) {
     return null;
+  }
+
+  if (
+    status === SubmissionStatus.REVISION_REQUIRED ||
+    status === SubmissionStatus.ACCEPTED ||
+    status === SubmissionStatus.REJECTED ||
+    status === SubmissionStatus.PUBLISHED
+  ) {
+    await assertCurrentRoundIsCompleted(submissionId);
   }
 
   return prisma.submission.update({
