@@ -5,6 +5,10 @@ import {
   getMySubmissions,
   getSubmissionById,
   updateSubmission,
+  getReviewerSubmissions,
+  getCommitteeSubmissions,
+  getReviewerSubmissionById,
+  updateSubmissionStatus,
 } from "./submissions.service.js";
 
 export async function createSubmissionHandler(req: Request, res: Response) {
@@ -78,6 +82,101 @@ export async function updateSubmissionHandler(req: Request, res: Response) {
     }
 
     const submission = await updateSubmission(id, userId, req.body);
+
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    return res.json({ submission });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getReviewerSubmissionsHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const submissions = await getReviewerSubmissions();
+    return res.json({ submissions });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getCommitteeSubmissionsHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const submissions = await getCommitteeSubmissions();
+    return res.json({ submissions });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getReviewerSubmissionByIdHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { id } = req.params;
+
+    const submission = await getReviewerSubmissionById(id);
+
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    return res.json({ submission });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function updateSubmissionStatusHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body as {
+      status?:
+        | "UNDER_REVIEW"
+        | "ACCEPTED"
+        | "REJECTED"
+        | "REVISION_REQUIRED"
+        | "RESUBMITTED"
+        | "PUBLISHED";
+    };
+
+    if (!status) {
+      return res.status(400).json({ message: "status is required" });
+    }
+
+    if (
+      ![
+        "UNDER_REVIEW",
+        "ACCEPTED",
+        "REJECTED",
+        "REVISION_REQUIRED",
+        "RESUBMITTED",
+        "PUBLISHED",
+      ].includes(status)
+    ) {
+      return res.status(400).json({ message: "invalid status" });
+    }
+
+    const submission = await updateSubmissionStatus(
+      id,
+      status as SubmissionStatus,
+    );
 
     if (!submission) {
       return res.status(404).json({ message: "Submission not found" });

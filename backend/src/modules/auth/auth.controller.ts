@@ -1,5 +1,20 @@
 import type { Request, Response } from "express";
-import { loginUser, registerUser } from "./auth.service.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { prisma } from "../../config/prisma.js";
+import { Role } from "@prisma/client";
+
+function signToken(user: { id: string; email: string; role: Role }) {
+  return jwt.sign(
+    {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET || "dev_secret",
+    { expiresIn: "7d" },
+  );
+}
 
 export async function register(req: Request, res: Response) {
   try {
@@ -18,7 +33,7 @@ export async function register(req: Request, res: Response) {
       password?: string;
       institution?: string;
       country?: string;
-      role?: "AUTHOR" | "REVIEWER" | "COMMITTEE";
+      role?: Role;
     };
 
     if (
@@ -30,35 +45,45 @@ export async function register(req: Request, res: Response) {
       !country ||
       !role
     ) {
-      return res.status(400).json({
-        message:
-          "firstName, lastName, email, password, institution, country, role are required",
-      });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "password must be at least 6 characters" });
+    const existing = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    if (existing) {
+      return res.status(409).json({ message: "User already exists" });
     }
 
-    const user = await registerUser(
-      firstName,
-      lastName,
-      email,
-      password,
-      institution,
-      country,
-      role
-    );
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.toLowerCase().trim(),
+        password: passwordHash,
+        institution: institution.trim(),
+        country: country.trim(),
+        role,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        institution: true,
+        country: true,
+        role: true,
+        createdAt: true,
+      },
+    });
 
     return res.status(201).json({ user });
-  } catch (e: any) {
-    if (e.message === "EMAIL_ALREADY_EXISTS") {
-      return res.status(409).json({ message: "email already exists" });
-    }
-
-    return res.status(500).json({ message: "server error" });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
   }
 }
 
@@ -70,18 +95,93 @@ export async function login(req: Request, res: Response) {
     };
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "email and password are required" });
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const result = await loginUser(email, password);
-    return res.json(result);
-  } catch (e: any) {
-    if (e.message === "INVALID_CREDENTIALS") {
-      return res.status(401).json({ message: "invalid credentials" });
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    return res.status(500).json({ message: "server error" });
+    const isValid = await bcrypt.compare(password, user.password);
+
+    if (!isValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const token = signToken(user);
+
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        institution: user.institution,
+        country: user.country,
+        role: user.role,
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function me(req: Request, res: Response) {
+  try {
+    const payload = (req as any).user as { sub: string };
+
+    if (!payload?.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        institution: true,
+        country: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({ user });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getReviewers(req: Request, res: Response) {
+  try {
+    const reviewers = await prisma.user.findMany({
+      where: { role: "REVIEWER" },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        institution: true,
+        country: true,
+      },
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+    });
+
+    return res.json({ reviewers });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
   }
 }

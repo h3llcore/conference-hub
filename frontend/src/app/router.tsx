@@ -11,7 +11,10 @@ import ProtectedRoute from "../features/auth/ProtectedRoute";
 import AuthorDashboard from "../pages/AuthorDashboard";
 import AuthorSubmitPage from "../pages/AuthorSubmitPage";
 import AuthorSubmissionDetailsPage from "../pages/AuthorSubmissionDetailsPage";
+import AuthorReviewsPage from "../pages/AuthorReviewsPage";
 import ReviewerDashboard from "../pages/ReviewerDashboard";
+import ReviewerSubmissionDetailsPage from "../pages/ReviewerSubmissionDetailsPage";
+import ReviewerReviewFormPage from "../pages/ReviewerReviewFormPage";
 import CommitteeDashboard from "../pages/CommitteeDashboard";
 import JournalsPage from "../pages/JournalsPage";
 
@@ -26,24 +29,35 @@ export const router = createBrowserRouter([
       { path: "unauthorized", element: <UnauthorizedPage /> },
       { path: "journals", element: <JournalsPage /> },
 
-      // AUTHOR only
       {
         element: <ProtectedRoute roles={["AUTHOR"]} />,
         children: [
           { path: "author", element: <AuthorDashboard /> },
           { path: "author/submit", element: <AuthorSubmitPage /> },
-          { path: "author/submission/:id", element: <AuthorSubmissionDetailsPage /> },
+          {
+            path: "author/submission/:id",
+            element: <AuthorSubmissionDetailsPage />,
+          },
           { path: "author/edit/:id", element: <AuthorSubmitPage /> },
+          { path: "author/reviews/:id", element: <AuthorReviewsPage /> },
         ],
       },
 
-      // REVIEWER only
       {
         element: <ProtectedRoute roles={["REVIEWER"]} />,
-        children: [{ path: "reviewer", element: <ReviewerDashboard /> }],
+        children: [
+          { path: "reviewer", element: <ReviewerDashboard /> },
+          {
+            path: "reviewer/submission/:id",
+            element: <ReviewerSubmissionDetailsPage />,
+          },
+          {
+            path: "reviewer/review/:id",
+            element: <ReviewerReviewFormPage />,
+          },
+        ],
       },
 
-      // COMMITTEE only
       {
         element: <ProtectedRoute roles={["COMMITTEE"]} />,
         children: [{ path: "committee", element: <CommitteeDashboard /> }],

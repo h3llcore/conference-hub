@@ -4,104 +4,106 @@ function buildUrl(path: string) {
   return `${BASE_URL.replace(/\/$/, "")}/api/${path.replace(/^\//, "")}`;
 }
 
-export async function createSubmission(payload: any) {
+function getAuthHeaders(includeJson = false) {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(buildUrl("/submissions"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(payload),
-  });
+  return {
+    ...(includeJson ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
+async function parseJsonResponse(res: Response) {
   const text = await res.text();
 
   try {
     const data = JSON.parse(text);
 
     if (!res.ok) {
-      throw new Error(data.message || "Failed to create submission");
+      throw new Error(data.message || "Request failed");
     }
 
     return data;
   } catch {
     throw new Error("Сервер повернув некоректну відповідь");
   }
+}
+
+export async function createSubmission(payload: any) {
+  const res = await fetch(buildUrl("/submissions"), {
+    method: "POST",
+    headers: getAuthHeaders(true),
+    body: JSON.stringify(payload),
+  });
+
+  return parseJsonResponse(res);
 }
 
 export async function getMySubmissions() {
-  const token = localStorage.getItem("token");
-
   const res = await fetch(buildUrl("/submissions/me"), {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(),
   });
 
-  const text = await res.text();
-
-  try {
-    const data = JSON.parse(text);
-
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to fetch submissions");
-    }
-
-    return data;
-  } catch {
-    throw new Error("Сервер повернув некоректну відповідь");
-  }
+  return parseJsonResponse(res);
 }
 
 export async function getSubmissionById(id: string) {
-  const token = localStorage.getItem("token");
-
   const res = await fetch(buildUrl(`/submissions/${id}`), {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(),
   });
 
-  const text = await res.text();
-
-  try {
-    const data = JSON.parse(text);
-
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to fetch submission");
-    }
-
-    return data;
-  } catch {
-    throw new Error("Сервер повернув некоректну відповідь");
-  }
+  return parseJsonResponse(res);
 }
 
 export async function updateSubmission(id: string, payload: any) {
-  const token = localStorage.getItem("token");
-
   const res = await fetch(buildUrl(`/submissions/${id}`), {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(true),
     body: JSON.stringify(payload),
   });
 
-  const text = await res.text();
+  return parseJsonResponse(res);
+}
 
-  try {
-    const data = JSON.parse(text);
+export async function getReviewerSubmissions() {
+  const res = await fetch(buildUrl("/submissions/reviewer"), {
+    headers: getAuthHeaders(),
+  });
 
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to update submission");
-    }
+  return parseJsonResponse(res);
+}
 
-    return data;
-  } catch {
-    throw new Error("Сервер повернув некоректну відповідь");
-  }
+export async function getCommitteeSubmissions() {
+  const res = await fetch(buildUrl("/submissions/committee"), {
+    headers: getAuthHeaders(),
+  });
+
+  return parseJsonResponse(res);
+}
+
+export async function getReviewerSubmissionById(id: string) {
+  const res = await fetch(buildUrl(`/submissions/reviewer/${id}`), {
+    headers: getAuthHeaders(),
+  });
+
+  return parseJsonResponse(res);
+}
+
+export async function updateReviewerSubmissionStatus(
+  id: string,
+  status:
+    | "UNDER_REVIEW"
+    | "ACCEPTED"
+    | "REJECTED"
+    | "REVISION_REQUIRED"
+    | "RESUBMITTED"
+    | "PUBLISHED",
+) {
+  const res = await fetch(buildUrl(`/submissions/${id}/status`), {
+    method: "PATCH",
+    headers: getAuthHeaders(true),
+    body: JSON.stringify({ status }),
+  });
+
+  return parseJsonResponse(res);
 }

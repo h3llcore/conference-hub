@@ -5,19 +5,24 @@ import { prisma } from "./config/prisma.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import venueRoutes from "./modules/venues/venue.routes.js";
 import submissionsRoutes from "./modules/submissions/submissions.routes.js";
+import assignmentsRoutes from "./modules/assignments/assignments.routes.js";
+import reviewsRoutes from "./modules/reviews/reviews.routes.js";
 
 dotenv.config();
 
 const app = express();
+
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
+
 app.use("/api/auth", authRoutes);
 app.use("/api/venues", venueRoutes);
 app.use("/api/submissions", submissionsRoutes);
+app.use("/api/assignments", assignmentsRoutes);
+app.use("/api/reviews", reviewsRoutes);
 
 app.get("/api/health", async (req, res) => {
   try {
-    // простий запит до БД, щоб перевірити з'єднання
     const usersCount = await prisma.user.count();
     res.json({ ok: true, message: "API is running", usersCount });
   } catch (e) {

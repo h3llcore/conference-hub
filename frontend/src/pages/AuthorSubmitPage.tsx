@@ -29,7 +29,16 @@ type SubmissionResponse = {
   coAuthors?: string | null;
   notes?: string | null;
   fileName?: string | null;
-  status: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "ACCEPTED" | "REJECTED";
+  status:
+    | "DRAFT"
+    | "SUBMITTED"
+    | "UNDER_REVIEW"
+    | "REVISION_REQUIRED"
+    | "RESUBMITTED"
+    | "ACCEPTED"
+    | "REJECTED"
+    | "PUBLISHED";
+  version: number;
 };
 
 type Venue = {
@@ -63,6 +72,8 @@ export default function AuthorSubmitPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [currentStatus, setCurrentStatus] = useState<string>("");
+  const [currentVersion, setCurrentVersion] = useState<number>(1);
 
   useEffect(() => {
     let isMounted = true;
@@ -119,6 +130,8 @@ export default function AuthorSubmitPage() {
         });
 
         setFileName(submission.fileName || "");
+        setCurrentStatus(submission.status || "");
+        setCurrentVersion(submission.version || 1);
       } catch (e: any) {
         if (!isMounted) return;
         setError(e.message || "Не вдалося завантажити подання.");
@@ -155,7 +168,7 @@ export default function AuthorSubmitPage() {
     setFileName(file ? file.name : "");
   }
 
-  function buildPayload(status: "DRAFT" | "SUBMITTED") {
+  function buildPayload(status: "DRAFT" | "SUBMITTED" | "RESUBMITTED") {
     return {
       title: form.title.trim(),
       abstract: form.abstract.trim(),
@@ -196,9 +209,18 @@ export default function AuthorSubmitPage() {
     try {
       setLoading(true);
 
+      const submitStatus =
+        isEditMode && currentStatus === "REVISION_REQUIRED"
+          ? "RESUBMITTED"
+          : "SUBMITTED";
+
       if (isEditMode && id) {
-        await updateSubmission(id, buildPayload("SUBMITTED"));
-        setSuccess("Подання успішно оновлено.");
+        await updateSubmission(id, buildPayload(submitStatus));
+        setSuccess(
+          submitStatus === "RESUBMITTED"
+            ? "Виправлену версію успішно подано повторно."
+            : "Подання успішно оновлено.",
+        );
       } else {
         await createSubmission(buildPayload("SUBMITTED"));
         setSuccess("Роботу успішно подано.");
@@ -257,18 +279,26 @@ export default function AuthorSubmitPage() {
       : item.type === "CONFERENCE",
   );
 
+  const isRevisionMode = isEditMode && currentStatus === "REVISION_REQUIRED";
+
   return (
     <section className="author-submit">
       <div className="author-submit__hero">
         <div className="author-submit__hero-content">
           <p className="author-submit__eyebrow">Подання матеріалів</p>
           <h1 className="author-submit__title">
-            {isEditMode ? "Редагування подання" : "Завантаження нової роботи"}
+            {isRevisionMode
+              ? "Повторне подання виправленої статті"
+              : isEditMode
+                ? "Редагування подання"
+                : "Завантаження нової роботи"}
           </h1>
           <p className="author-submit__description">
-            {isEditMode
-              ? "Оновіть інформацію про наукову роботу, змініть файл або збережіть її як чернетку."
-              : "Заповніть основну інформацію про наукову роботу, оберіть журнал або конференцію та додайте файл для подання."}
+            {isRevisionMode
+              ? `Ваша стаття потребує доопрацювання. Після повторного подання буде створено версію ${currentVersion + 1}.`
+              : isEditMode
+                ? "Оновіть інформацію про наукову роботу, змініть файл або збережіть її як чернетку."
+                : "Заповніть основну інформацію про наукову роботу, оберіть журнал або конференцію та додайте файл для подання."}
           </p>
         </div>
       </div>
@@ -277,7 +307,13 @@ export default function AuthorSubmitPage() {
         <main className="author-submit__main">
           <form className="author-submit__card" onSubmit={handleSubmit}>
             <div className="author-submit__card-header">
-              <h2>{isEditMode ? "Редагування форми" : "Форма подання"}</h2>
+              <h2>
+                {isRevisionMode
+                  ? "Форма повторного подання"
+                  : isEditMode
+                    ? "Редагування форми"
+                    : "Форма подання"}
+              </h2>
               <p>Усі поля з "*" є обов’язковими.</p>
             </div>
 
@@ -432,9 +468,11 @@ export default function AuthorSubmitPage() {
                   >
                     {loading
                       ? "Надсилання..."
-                      : isEditMode
-                        ? "Оновити подання"
-                        : "Надіслати роботу"}
+                      : isRevisionMode
+                        ? "Подати виправлену версію"
+                        : isEditMode
+                          ? "Оновити подання"
+                          : "Надіслати роботу"}
                   </button>
                 </div>
               </>

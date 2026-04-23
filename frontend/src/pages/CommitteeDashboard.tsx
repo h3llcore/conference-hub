@@ -1,13 +1,536 @@
-import { useAuth } from "../features/auth/AuthContext";
+import { CheckCircle2, Eye, FileText, RotateCcw, Search, Users, XCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { getCommitteeSubmissions, updateReviewerSubmissionStatus } from "../features/submissions/submissions.api";
+import { assignReviewers, getAssignmentsBySubmission } from "../features/assignments/assignments.api";
+import { getCommitteeSubmissionReviews } from "../features/reviews/reviews.api";
+import { getReviewers } from "../features/users/users.api";
+import "../styles/committee-dashboard.css";
+
+type Submission = {
+  id: string;
+  title: string;
+  abstract: string;
+  keywords: string;
+  venueType: "JOURNAL" | "CONFERENCE";
+  venue: string;
+  coAuthors?: string | null;
+  notes?: string | null;
+  fileName?: string | null;
+  status:
+    | "DRAFT"
+    | "SUBMITTED"
+    | "UNDER_REVIEW"
+    | "REVISION_REQUIRED"
+    | "RESUBMITTED"
+    | "ACCEPTED"
+    | "REJECTED"
+    | "PUBLISHED";
+  version: number;
+  currentRound: number;
+  createdAt: string;
+  author?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    institution: string;
+    country: string;
+  };
+};
+
+type Reviewer = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  institution: string;
+  country: string;
+};
+
+type Assignment = {
+  id: string;
+  assignedAt: string;
+  updatedAt: string;
+  round: number;
+  status: "ASSIGNED" | "IN_PROGRESS" | "COMPLETED";
+  reviewer: Reviewer;
+};
+
+type CommitteeReview = {
+  id: string;
+  round: number;
+  decision: string;
+  comments?: string | null;
+  recommendations?: string | null;
+  conclusion?: string | null;
+  createdAt: string;
+  reviewer: Reviewer;
+};
+
+function formatStatus(status: string) {
+  if (status === "UNDER_REVIEW") return "На рецензуванні";
+  if (status === "ACCEPTED") return "Прийнято";
+  if (status === "REJECTED") return "Відхилено";
+  if (status === "REVISION_REQUIRED") return "Потребує доопрацювання";
+  if (status === "RESUBMITTED") return "Повторно подано";
+  if (status === "PUBLISHED") return "Опубліковано";
+  if (status === "DRAFT") return "Чернетка";
+  return "Подано";
+}
+
+function formatDecision(decision: string) {
+  if (decision === "ACCEPT") return "Прийняти";
+  if (decision === "ACCEPT_WITH_REVISIONS") {
+    return "Прийняти після доопрацювання";
+  }
+  return "Відхилити";
+}
+
+function formatAssignmentStatus(status: string) {
+  if (status === "ASSIGNED") return "Призначено";
+  if (status === "IN_PROGRESS") return "У роботі";
+  if (status === "COMPLETED") return "Завершено";
+  return status;
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("uk-UA");
+}
 
 export default function CommitteeDashboard() {
-  const { user } = useAuth();
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [reviewers, setReviewers] = useState<Reviewer[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [selectedReviewerIds, setSelectedReviewerIds] = useState<string[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [reviews, setReviews] = useState<CommitteeReview[]>([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const [submissionsData, reviewersData] = await Promise.all([
+          getCommitteeSubmissions(),
+          getReviewers(),
+        ]);
+
+        if (!isMounted) return;
+
+        setSubmissions(submissionsData.submissions || []);
+        setReviewers(reviewersData.reviewers || []);
+      } catch (e: any) {
+        if (!isMounted) return;
+        setError(e.message || "Не вдалося завантажити дані оргкомітету.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function handleSelectSubmission(submission: Submission) {
+    try {
+      setSelectedSubmission(submission);
+      setDetailsLoading(true);
+      setSelectedReviewerIds([]);
+
+      const [assignmentsData, reviewsData] = await Promise.all([
+        getAssignmentsBySubmission(submission.id),
+        getCommitteeSubmissionReviews(submission.id),
+      ]);
+
+      setAssignments(assignmentsData.assignments || []);
+      setReviews(reviewsData.reviews || []);
+    } catch (e: any) {
+      setError(e.message || "Не вдалося завантажити деталі подання.");
+    } finally {
+      setDetailsLoading(false);
+    }
+  }
+
+  function handleToggleReviewer(reviewerId: string) {
+    setSelectedReviewerIds((prev) => {
+      if (prev.includes(reviewerId)) {
+        return prev.filter((id) => id !== reviewerId);
+      }
+
+      if (prev.length >= 3) {
+        return prev;
+      }
+
+      return [...prev, reviewerId];
+    });
+  }
+
+  async function handleAssignReviewers() {
+    if (!selectedSubmission || selectedReviewerIds.length === 0) {
+      return;
+    }
+
+    try {
+      setAssignLoading(true);
+      setError("");
+
+      const data = await assignReviewers({
+        submissionId: selectedSubmission.id,
+        reviewerIds: selectedReviewerIds,
+      });
+
+      setAssignments(data.assignments || []);
+      setSelectedReviewerIds([]);
+
+      const refreshedAssignments = await getAssignmentsBySubmission(
+        selectedSubmission.id,
+      );
+      setAssignments(refreshedAssignments.assignments || []);
+
+      setSubmissions((prev) =>
+        prev.map((item) =>
+          item.id === selectedSubmission.id
+            ? { ...item, status: "UNDER_REVIEW" }
+            : item,
+        ),
+      );
+
+      setSelectedSubmission((prev) =>
+        prev ? { ...prev, status: "UNDER_REVIEW" } : prev,
+      );
+    } catch (e: any) {
+      setError(e.message || "Не вдалося призначити рецензентів.");
+    } finally {
+      setAssignLoading(false);
+    }
+  }
+
+  async function handleCommitteeDecision(
+    submissionId: string,
+    status: "ACCEPTED" | "REJECTED" | "REVISION_REQUIRED",
+  ) {
+    try {
+      setActionLoadingId(submissionId);
+      setError("");
+
+      const data = await updateReviewerSubmissionStatus(submissionId, status);
+      const updated = data.submission;
+
+      setSubmissions((prev) =>
+        prev.map((item) => (item.id === submissionId ? updated : item)),
+      );
+
+      setSelectedSubmission((prev) =>
+        prev && prev.id === submissionId ? updated : prev,
+      );
+    } catch (e: any) {
+      setError(e.message || "Не вдалося змінити статус.");
+    } finally {
+      setActionLoadingId("");
+    }
+  }
+
+  const filteredSubmissions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) return submissions;
+
+    return submissions.filter((item) => {
+      const title = item.title.toLowerCase();
+      const venue = item.venue.toLowerCase();
+      const author = item.author
+        ? `${item.author.firstName} ${item.author.lastName}`.toLowerCase()
+        : "";
+      const keywords = item.keywords.toLowerCase();
+
+      return (
+        title.includes(query) ||
+        venue.includes(query) ||
+        author.includes(query) ||
+        keywords.includes(query)
+      );
+    });
+  }, [submissions, search]);
 
   return (
-    <div>
-      <h2>Committee dashboard</h2>
-      <p>Вітаю, {user?.email}</p>
-      <p>Тут буде: керування конференціями/журналами, розподіл рецензентів, програма.</p>
-    </div>
+    <section className="committee-dashboard">
+      <div className="committee-dashboard__hero">
+        <div className="committee-dashboard__hero-content">
+          <p className="committee-dashboard__eyebrow">Кабінет оргкомітету</p>
+          <h1 className="committee-dashboard__title">
+            Керування поданнями та рецензуванням
+          </h1>
+          <p className="committee-dashboard__description">
+            Переглядайте всі подання, призначайте рецензентів, контролюйте
+            рецензії та приймайте фінальні рішення.
+          </p>
+        </div>
+      </div>
+
+      <div className="committee-dashboard__toolbar">
+        <div className="committee-dashboard__search">
+          <Search size={18} />
+          <input
+            type="text"
+            placeholder="Пошук за назвою, автором, журналом або ключовими словами"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+      </div>
+
+      {error && (
+        <div className="committee-dashboard__state committee-dashboard__state--error">
+          {error}
+        </div>
+      )}
+
+      <div className="committee-dashboard__layout">
+        <main className="committee-dashboard__main">
+          {loading && (
+            <div className="committee-dashboard__state">
+              Завантаження подань...
+            </div>
+          )}
+
+          {!loading && filteredSubmissions.length === 0 && (
+            <div className="committee-dashboard__state">
+              Подань поки немає.
+            </div>
+          )}
+
+          {!loading && filteredSubmissions.length > 0 && (
+            <div className="committee-dashboard__list">
+              {filteredSubmissions.map((item) => (
+                <article key={item.id} className="committee-dashboard__card">
+                  <div className="committee-dashboard__card-top">
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>
+                        {item.author
+                          ? `${item.author.firstName} ${item.author.lastName} • ${item.author.institution}`
+                          : "Автор не вказаний"}
+                      </p>
+                    </div>
+
+                    <span className="committee-dashboard__status">
+                      {formatStatus(item.status)}
+                    </span>
+                  </div>
+
+                  <div className="committee-dashboard__meta">
+                    <span>
+                      Тип:{" "}
+                      {item.venueType === "JOURNAL"
+                        ? "Науковий журнал"
+                        : "Конференція"}
+                    </span>
+                    <span>{item.venue}</span>
+                    <span>Версія: {item.version}</span>
+                    <span>Раунд: {item.currentRound}</span>
+                    <span>Дата подання: {formatDate(item.createdAt)}</span>
+                    {item.fileName && <span>Файл: {item.fileName}</span>}
+                  </div>
+
+                  <p className="committee-dashboard__excerpt">{item.abstract}</p>
+
+                  <div className="committee-dashboard__actions">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectSubmission(item)}
+                    >
+                      <Eye size={16} />
+                      <span>Відкрити</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="committee-dashboard__action committee-dashboard__action--revision"
+                      disabled={actionLoadingId === item.id}
+                      onClick={() =>
+                        handleCommitteeDecision(item.id, "REVISION_REQUIRED")
+                      }
+                    >
+                      <RotateCcw size={16} />
+                      <span>На доопрацювання</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="committee-dashboard__action committee-dashboard__action--accept"
+                      disabled={actionLoadingId === item.id}
+                      onClick={() => handleCommitteeDecision(item.id, "ACCEPTED")}
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>Прийняти</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="committee-dashboard__action committee-dashboard__action--reject"
+                      disabled={actionLoadingId === item.id}
+                      onClick={() => handleCommitteeDecision(item.id, "REJECTED")}
+                    >
+                      <XCircle size={16} />
+                      <span>Відхилити</span>
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </main>
+
+        <aside className="committee-dashboard__sidebar">
+          <div className="committee-dashboard__panel">
+            <h2>Деталі подання</h2>
+
+            {!selectedSubmission && (
+              <p className="committee-dashboard__placeholder">
+                Оберіть подання зі списку, щоб переглянути деталі та призначити
+                рецензентів.
+              </p>
+            )}
+
+            {detailsLoading && (
+              <div className="committee-dashboard__state">Завантаження деталей...</div>
+            )}
+
+            {!detailsLoading && selectedSubmission && (
+              <>
+                <div className="committee-dashboard__detail-block">
+                  <h3>{selectedSubmission.title}</h3>
+                  <p>
+                    <strong>Автор:</strong>{" "}
+                    {selectedSubmission.author
+                      ? `${selectedSubmission.author.firstName} ${selectedSubmission.author.lastName}`
+                      : "—"}
+                  </p>
+                  <p>
+                    <strong>Email:</strong>{" "}
+                    {selectedSubmission.author?.email || "—"}
+                  </p>
+                  <p>
+                    <strong>Установа:</strong>{" "}
+                    {selectedSubmission.author?.institution || "—"}
+                  </p>
+                  <p>
+                    <strong>Журнал / конференція:</strong> {selectedSubmission.venue}
+                  </p>
+                  <p>
+                    <strong>Версія:</strong> {selectedSubmission.version}
+                  </p>
+                  <p>
+                    <strong>Раунд:</strong> {selectedSubmission.currentRound}
+                  </p>
+                  <p>
+                    <strong>Файл:</strong> {selectedSubmission.fileName || "Не вказано"}
+                  </p>
+                </div>
+
+                <div className="committee-dashboard__detail-block">
+                  <div className="committee-dashboard__block-header">
+                    <Users size={18} />
+                    <h3>Призначення рецензентів</h3>
+                  </div>
+
+                  <p className="committee-dashboard__hint">
+                    Можна вибрати від 1 до 3 рецензентів.
+                  </p>
+
+                  <div className="committee-dashboard__reviewers">
+                    {reviewers.map((reviewer) => (
+                      <label
+                        key={reviewer.id}
+                        className="committee-dashboard__reviewer-item"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedReviewerIds.includes(reviewer.id)}
+                          onChange={() => handleToggleReviewer(reviewer.id)}
+                        />
+                        <span>
+                          {reviewer.firstName} {reviewer.lastName}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="committee-dashboard__assign-button"
+                    onClick={handleAssignReviewers}
+                    disabled={assignLoading || selectedReviewerIds.length === 0}
+                  >
+                    {assignLoading ? "Призначення..." : "Призначити рецензентів"}
+                  </button>
+
+                  <div className="committee-dashboard__assigned-list">
+                    <h4>Призначення по раундах:</h4>
+
+                    {assignments.length === 0 && <p>Рецензентів ще не призначено.</p>}
+
+                    {assignments.map((item) => (
+                      <div key={item.id} className="committee-dashboard__assigned-item">
+                        <span>
+                          {item.reviewer.firstName} {item.reviewer.lastName} • Раунд {item.round}
+                        </span>
+                        <strong>{formatAssignmentStatus(item.status)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="committee-dashboard__detail-block">
+                  <div className="committee-dashboard__block-header">
+                    <FileText size={18} />
+                    <h3>Рецензії</h3>
+                  </div>
+
+                  {reviews.length === 0 && <p>Рецензій поки немає.</p>}
+
+                  {reviews.map((review) => (
+                    <article key={review.id} className="committee-dashboard__review-card">
+                      <p>
+                        <strong>Рецензент:</strong> {review.reviewer.firstName}{" "}
+                        {review.reviewer.lastName}
+                      </p>
+                      <p>
+                        <strong>Раунд:</strong> {review.round}
+                      </p>
+                      <p>
+                        <strong>Рішення:</strong> {formatDecision(review.decision)}
+                      </p>
+                      <p>
+                        <strong>Коментарі:</strong> {review.comments || "—"}
+                      </p>
+                      <p>
+                        <strong>Рекомендації:</strong>{" "}
+                        {review.recommendations || "—"}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </aside>
+      </div>
+    </section>
   );
 }

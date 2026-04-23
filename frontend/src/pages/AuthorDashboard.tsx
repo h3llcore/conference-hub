@@ -14,7 +14,16 @@ type Submission = {
   coAuthors?: string | null;
   notes?: string | null;
   fileName?: string | null;
-  status: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "ACCEPTED" | "REJECTED";
+  status:
+    | "DRAFT"
+    | "SUBMITTED"
+    | "UNDER_REVIEW"
+    | "REVISION_REQUIRED"
+    | "RESUBMITTED"
+    | "ACCEPTED"
+    | "REJECTED"
+    | "PUBLISHED";
+  version?: number;
   createdAt: string;
 };
 
@@ -42,25 +51,37 @@ const announcements = [
   },
 ];
 
-function formatStatus(status: Submission["status"]) {
-  if (status === "ACCEPTED") return "Прийнято";
-  if (status === "UNDER_REVIEW") return "На рецензуванні";
+function formatStatus(status: string) {
+  if (status === "DRAFT") return "Чернетка";
   if (status === "SUBMITTED") return "Подано";
+  if (status === "UNDER_REVIEW") return "На рецензуванні";
+  if (status === "REVISION_REQUIRED") return "Потребує доопрацювання";
+  if (status === "RESUBMITTED") return "Повторно подано";
+  if (status === "ACCEPTED") return "Прийнято";
   if (status === "REJECTED") return "Відхилено";
-  return "Чернетка";
+  if (status === "PUBLISHED") return "Опубліковано";
+  return status;
 }
 
-function getStatusClass(status: Submission["status"]) {
-  if (status === "ACCEPTED") {
+function getStatusClass(status: string) {
+  if (status === "ACCEPTED" || status === "PUBLISHED") {
     return "author-dashboard__status author-dashboard__status--accepted";
   }
 
-  if (status === "UNDER_REVIEW" || status === "SUBMITTED") {
+  if (
+    status === "UNDER_REVIEW" ||
+    status === "SUBMITTED" ||
+    status === "RESUBMITTED"
+  ) {
     return "author-dashboard__status author-dashboard__status--review";
   }
 
   if (status === "REJECTED") {
     return "author-dashboard__status author-dashboard__status--rejected";
+  }
+
+  if (status === "REVISION_REQUIRED") {
+    return "author-dashboard__status author-dashboard__status--revision";
   }
 
   return "author-dashboard__status author-dashboard__status--draft";
@@ -108,9 +129,15 @@ export default function AuthorDashboard() {
 
   const stats = useMemo(() => {
     const total = submissions.length;
+
     const activeReview = submissions.filter(
-      (item) => item.status === "UNDER_REVIEW" || item.status === "SUBMITTED"
+      (item) =>
+        item.status === "UNDER_REVIEW" ||
+        item.status === "SUBMITTED" ||
+        item.status === "RESUBMITTED" ||
+        item.status === "REVISION_REQUIRED",
     ).length;
+
     const drafts = submissions.filter((item) => item.status === "DRAFT").length;
 
     return { total, activeReview, drafts };
@@ -121,10 +148,12 @@ export default function AuthorDashboard() {
       <div className="author-dashboard__hero">
         <div className="author-dashboard__hero-content">
           <p className="author-dashboard__eyebrow">Кабінет автора</p>
-          <h1 className="author-dashboard__title">Вітаємо у вашому робочому просторі</h1>
+          <h1 className="author-dashboard__title">
+            Вітаємо у вашому робочому просторі
+          </h1>
           <p className="author-dashboard__description">
-            Тут ви можете відстежувати свої подання, переглядати дедлайни, працювати з чернетками та
-            швидко подавати нові наукові матеріали.
+            Тут ви можете відстежувати свої подання, переглядати дедлайни,
+            працювати з чернетками та швидко подавати нові наукові матеріали.
           </p>
 
           <div className="author-dashboard__hero-actions">
@@ -190,20 +219,31 @@ export default function AuthorDashboard() {
               </Link>
             </div>
 
-            {loading && <div className="author-dashboard__state">Завантаження подань...</div>}
+            {loading && (
+              <div className="author-dashboard__state">
+                Завантаження подань...
+              </div>
+            )}
 
             {!loading && error && (
-              <div className="author-dashboard__state author-dashboard__state--error">{error}</div>
+              <div className="author-dashboard__state author-dashboard__state--error">
+                {error}
+              </div>
             )}
 
             {!loading && !error && submissions.length === 0 && (
-              <div className="author-dashboard__state">У вас поки немає жодного подання.</div>
+              <div className="author-dashboard__state">
+                У вас поки немає жодного подання.
+              </div>
             )}
 
             {!loading && !error && submissions.length > 0 && (
               <div className="author-dashboard__submissions">
                 {submissions.map((item) => (
-                  <article key={item.id} className="author-dashboard__submission-card">
+                  <article
+                    key={item.id}
+                    className="author-dashboard__submission-card"
+                  >
                     <div className="author-dashboard__submission-top">
                       <div>
                         <h3>{item.title}</h3>
@@ -217,8 +257,12 @@ export default function AuthorDashboard() {
 
                     <div className="author-dashboard__submission-meta">
                       <span>
-                        Тип: {item.venueType === "JOURNAL" ? "Науковий журнал" : "Конференція"}
+                        Тип:{" "}
+                        {item.venueType === "JOURNAL"
+                          ? "Науковий журнал"
+                          : "Конференція"}
                       </span>
+                      <span>Версія: {item.version || 1}</span>
                       <span>Дата подання: {formatDate(item.createdAt)}</span>
                       {item.fileName && <span>Файл: {item.fileName}</span>}
                     </div>
@@ -227,8 +271,21 @@ export default function AuthorDashboard() {
                       <span>Ключові слова: {item.keywords}</span>
 
                       <div className="author-dashboard__submission-actions">
-                        <Link to={`/author/submission/${item.id}`}>Переглянути</Link>
-                        <Link to={`/author/edit/${item.id}`}>Редагувати</Link>
+                        <Link to={`/author/submission/${item.id}`}>
+                          Переглянути
+                        </Link>
+
+                        {item.status === "REVISION_REQUIRED" ? (
+                          <Link to={`/author/edit/${item.id}`}>
+                            Подати повторно
+                          </Link>
+                        ) : (
+                          <Link to={`/author/edit/${item.id}`}>
+                            Редагувати
+                          </Link>
+                        )}
+
+                        <Link to={`/author/reviews/${item.id}`}>Рецензії</Link>
                       </div>
                     </div>
                   </article>
@@ -246,7 +303,10 @@ export default function AuthorDashboard() {
 
             <div className="author-dashboard__deadlines">
               {deadlines.map((deadline) => (
-                <article key={deadline.id} className="author-dashboard__deadline-card">
+                <article
+                  key={deadline.id}
+                  className="author-dashboard__deadline-card"
+                >
                   <h3>{deadline.title}</h3>
                   <span>{deadline.date}</span>
                 </article>
@@ -261,7 +321,10 @@ export default function AuthorDashboard() {
 
             <div className="author-dashboard__announcements">
               {announcements.map((item) => (
-                <article key={item.id} className="author-dashboard__announcement-card">
+                <article
+                  key={item.id}
+                  className="author-dashboard__announcement-card"
+                >
                   <p>{item.text}</p>
                 </article>
               ))}
