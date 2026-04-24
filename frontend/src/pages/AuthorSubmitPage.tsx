@@ -224,13 +224,11 @@ export default function AuthorSubmitPage() {
       } else {
         await createSubmission(buildPayload("SUBMITTED"));
         setSuccess("Роботу успішно подано.");
-        setForm(initialForm);
-        setFileName("");
       }
 
       setTimeout(() => {
         navigate("/author");
-      }, 1200);
+      }, 2000);
     } catch (e: any) {
       setError(
         e.message ||
@@ -261,6 +259,10 @@ export default function AuthorSubmitPage() {
         await createSubmission(buildPayload("DRAFT"));
         setSuccess("Чернетку успішно збережено.");
       }
+
+      setTimeout(() => {
+        navigate("/author");
+      }, 2000);
     } catch (e: any) {
       setError(
         e.message ||
@@ -300,6 +302,14 @@ export default function AuthorSubmitPage() {
                 ? "Оновіть інформацію про наукову роботу, змініть файл або збережіть її як чернетку."
                 : "Заповніть основну інформацію про наукову роботу, оберіть журнал або конференцію та додайте файл для подання."}
           </p>
+
+          <button
+            type="button"
+            className="author-submit__back-link"
+            onClick={() => navigate("/author")}
+          >
+            ← Назад до кабінету автора
+          </button>
         </div>
       </div>
 

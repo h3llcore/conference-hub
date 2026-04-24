@@ -178,6 +178,10 @@ export default function ReviewerReviewFormPage() {
       });
 
       setSuccess("Рецензію успішно подано комітету.");
+
+      setTimeout(() => {
+        navigate("/reviewer");
+      }, 2000);
     } catch (e: any) {
       setError(e.message || "Не вдалося зберегти рецензію.");
     } finally {

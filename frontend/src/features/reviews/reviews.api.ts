@@ -40,7 +40,7 @@ export type ReviewDecision =
   | "ACCEPT_WITH_REVISIONS"
   | "REJECT";
 
-export async function createOrUpdateReview(payload: {
+export type ReviewPayload = {
   submissionId: string;
   titleScore: ReviewScore;
   relevanceScore: ReviewScore;
@@ -54,7 +54,9 @@ export async function createOrUpdateReview(payload: {
   recommendations?: string;
   conclusion?: string;
   decision: ReviewDecision;
-}) {
+};
+
+export async function createOrUpdateReview(payload: ReviewPayload) {
   const res = await fetch(buildUrl("/reviews"), {
     method: "POST",
     headers: getAuthHeaders(true),
@@ -64,10 +66,13 @@ export async function createOrUpdateReview(payload: {
   return parseJsonResponse(res);
 }
 
-export async function getMyReviewBySubmission(submissionId: string) {
-  const res = await fetch(buildUrl(`/reviews/submission/${submissionId}/my`), {
-    headers: getAuthHeaders(),
-  });
+export async function getCommitteeSubmissionReviews(submissionId: string) {
+  const res = await fetch(
+    buildUrl(`/reviews/submission/${submissionId}/committee`),
+    {
+      headers: getAuthHeaders(),
+    },
+  );
 
   return parseJsonResponse(res);
 }
@@ -83,9 +88,9 @@ export async function getAuthorSubmissionReviews(submissionId: string) {
   return parseJsonResponse(res);
 }
 
-export async function getCommitteeSubmissionReviews(submissionId: string) {
+export async function getMyReviewBySubmission(submissionId: string) {
   const res = await fetch(
-    buildUrl(`/reviews/submission/${submissionId}/committee`),
+    buildUrl(`/reviews/submission/${submissionId}/my`),
     {
       headers: getAuthHeaders(),
     },

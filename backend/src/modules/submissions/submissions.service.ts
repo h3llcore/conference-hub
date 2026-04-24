@@ -167,33 +167,22 @@ export async function getReviewerSubmissionById(submissionId: string) {
   });
 }
 
-async function assertCurrentRoundIsCompleted(submissionId: string) {
-  const submission = await prisma.submission.findUnique({
-    where: { id: submissionId },
-    select: {
-      id: true,
-      currentRound: true,
-    },
-  });
-
-  if (!submission) {
-    const error = new Error("Submission not found");
-    (error as any).status = 404;
-    throw error;
-  }
-
-  const currentRoundAssignments = await prisma.submissionReviewer.findMany({
+async function assertLatestRoundIsCompleted(submissionId: string) {
+  const assignments = await prisma.submissionReviewer.findMany({
     where: {
       submissionId,
-      round: submission.currentRound,
     },
     select: {
       id: true,
+      round: true,
       status: true,
+    },
+    orderBy: {
+      round: "desc",
     },
   });
 
-  if (currentRoundAssignments.length === 0) {
+  if (assignments.length === 0) {
     const error = new Error(
       "Cannot make a final decision before assigning reviewers",
     );
@@ -201,13 +190,19 @@ async function assertCurrentRoundIsCompleted(submissionId: string) {
     throw error;
   }
 
-  const hasIncompleteReview = currentRoundAssignments.some(
+  const latestRound = Math.max(...assignments.map((item) => item.round));
+
+  const latestRoundAssignments = assignments.filter(
+    (item) => item.round === latestRound,
+  );
+
+  const hasIncompleteReview = latestRoundAssignments.some(
     (assignment) => assignment.status !== AssignmentStatus.COMPLETED,
   );
 
   if (hasIncompleteReview) {
     const error = new Error(
-      "Cannot make a final decision until all reviewers complete the current round",
+      "Cannot make a final decision until all reviewers complete the latest round",
     );
     (error as any).status = 409;
     throw error;
@@ -244,7 +239,7 @@ export async function updateSubmissionStatus(
     status === SubmissionStatus.REJECTED ||
     status === SubmissionStatus.PUBLISHED
   ) {
-    await assertCurrentRoundIsCompleted(submissionId);
+    await assertLatestRoundIsCompleted(submissionId);
   }
 
   return prisma.submission.update({

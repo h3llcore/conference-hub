@@ -94,9 +94,7 @@ function formatStatus(status: string) {
 
 function formatDecision(decision: string) {
   if (decision === "ACCEPT") return "Прийняти";
-  if (decision === "ACCEPT_WITH_REVISIONS") {
-    return "Прийняти після доопрацювання";
-  }
+  if (decision === "ACCEPT_WITH_REVISIONS") return "Прийняти після доопрацювання";
   return "Відхилити";
 }
 
@@ -228,34 +226,38 @@ export default function CommitteeDashboard() {
     return "";
   }
 
-  function getCurrentRoundAssignments(submission: Submission) {
+  function getDecisionRoundAssignments(submission: Submission) {
     if (selectedSubmission?.id !== submission.id) {
       return [];
     }
 
-    return assignments.filter(
-      (item) => item.round === submission.currentRound,
-    );
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    const latestRound = Math.max(...assignments.map((item) => item.round));
+
+    return assignments.filter((item) => item.round === latestRound);
   }
 
   function canMakeCommitteeDecision(submission: Submission) {
-    const currentRoundAssignments = getCurrentRoundAssignments(submission);
+    const decisionRoundAssignments = getDecisionRoundAssignments(submission);
 
-    if (currentRoundAssignments.length === 0) {
+    if (decisionRoundAssignments.length === 0) {
       return false;
     }
 
-    return currentRoundAssignments.every((item) => item.status === "COMPLETED");
+    return decisionRoundAssignments.every((item) => item.status === "COMPLETED");
   }
 
   function getDecisionDisabledMessage(submission: Submission) {
-    const currentRoundAssignments = getCurrentRoundAssignments(submission);
+    const decisionRoundAssignments = getDecisionRoundAssignments(submission);
 
-    if (currentRoundAssignments.length === 0) {
+    if (decisionRoundAssignments.length === 0) {
       return "Спочатку призначте рецензентів.";
     }
 
-    const unfinishedCount = currentRoundAssignments.filter(
+    const unfinishedCount = decisionRoundAssignments.filter(
       (item) => item.status !== "COMPLETED",
     ).length;
 

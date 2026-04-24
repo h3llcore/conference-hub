@@ -65,16 +65,16 @@ export async function updateSubmission(id: string, payload: any) {
   return parseJsonResponse(res);
 }
 
-export async function getReviewerSubmissions() {
-  const res = await fetch(buildUrl("/submissions/reviewer"), {
+export async function getCommitteeSubmissions() {
+  const res = await fetch(buildUrl("/submissions/committee"), {
     headers: getAuthHeaders(),
   });
 
   return parseJsonResponse(res);
 }
 
-export async function getCommitteeSubmissions() {
-  const res = await fetch(buildUrl("/submissions/committee"), {
+export async function getReviewerSubmissions() {
+  const res = await fetch(buildUrl("/submissions/reviewer"), {
     headers: getAuthHeaders(),
   });
 
@@ -97,7 +97,7 @@ export async function updateReviewerSubmissionStatus(
     | "REJECTED"
     | "REVISION_REQUIRED"
     | "RESUBMITTED"
-    | "PUBLISHED",
+    | "PUBLISHED"
 ) {
   const res = await fetch(buildUrl(`/submissions/${id}/status`), {
     method: "PATCH",

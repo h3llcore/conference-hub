@@ -13,16 +13,30 @@ type Submission = {
   coAuthors?: string | null;
   notes?: string | null;
   fileName?: string | null;
-  status: string;
+  status:
+    | "DRAFT"
+    | "SUBMITTED"
+    | "UNDER_REVIEW"
+    | "REVISION_REQUIRED"
+    | "RESUBMITTED"
+    | "ACCEPTED"
+    | "REJECTED"
+    | "PUBLISHED";
+  version?: number;
+  currentRound?: number;
   createdAt: string;
 };
 
 function formatStatus(status: string) {
-  if (status === "ACCEPTED") return "Прийнято";
-  if (status === "UNDER_REVIEW") return "На рецензуванні";
+  if (status === "DRAFT") return "Чернетка";
   if (status === "SUBMITTED") return "Подано";
+  if (status === "UNDER_REVIEW") return "На рецензуванні";
+  if (status === "REVISION_REQUIRED") return "Потребує доопрацювання";
+  if (status === "RESUBMITTED") return "Повторно подано";
+  if (status === "ACCEPTED") return "Прийнято";
   if (status === "REJECTED") return "Відхилено";
-  return "Чернетка";
+  if (status === "PUBLISHED") return "Опубліковано";
+  return status;
 }
 
 function formatDate(dateString: string) {
@@ -79,7 +93,8 @@ export default function AuthorSubmissionDetailsPage() {
           <p className="author-submit__eyebrow">Перегляд подання</p>
           <h1 className="author-submit__title">Деталі наукової роботи</h1>
           <p className="author-submit__description">
-            Перегляньте повну інформацію про подану роботу та, за потреби, перейдіть до редагування.
+            Перегляньте повну інформацію про подану роботу, її версію, раунд
+            рецензування та поточний статус.
           </p>
         </div>
       </div>
@@ -136,7 +151,22 @@ export default function AuthorSubmissionDetailsPage() {
 
                 <div className="author-submit__field">
                   <label>Файл</label>
-                  <input value={submission.fileName || "Файл не вказано"} readOnly />
+                  <input
+                    value={submission.fileName || "Файл не вказано"}
+                    readOnly
+                  />
+                </div>
+
+                <div className="author-submit__row">
+                  <div className="author-submit__field">
+                    <label>Версія</label>
+                    <input value={submission.version || 1} readOnly />
+                  </div>
+
+                  <div className="author-submit__field">
+                    <label>Раунд рецензування</label>
+                    <input value={submission.currentRound || 1} readOnly />
+                  </div>
                 </div>
 
                 <div className="author-submit__field">
@@ -154,8 +184,19 @@ export default function AuthorSubmissionDetailsPage() {
                   </button>
 
                   <Link
+                    to={`/author/reviews/${submission.id}`}
+                    className="author-submit__button author-submit__button--secondary"
+                  >
+                    Рецензії
+                  </Link>
+
+                  <Link
                     to={`/author/edit/${submission.id}`}
-                    className="author-submit__button author-submit__button--primary"> Редагувати
+                    className="author-submit__button author-submit__button--primary"
+                  >
+                    {submission.status === "REVISION_REQUIRED"
+                      ? "Подати повторно"
+                      : "Редагувати"}
                   </Link>
                 </div>
               </>
