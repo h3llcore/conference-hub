@@ -1,4 +1,4 @@
-import { FileText, MessageSquareText } from "lucide-react";
+import { ExternalLink, FileText, MessageSquareText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getReviewerSubmissionById } from "../features/submissions/submissions.api";
@@ -75,6 +75,14 @@ const decisionOptions: { value: ReviewDecision; label: string }[] = [
   { value: "ACCEPT_WITH_REVISIONS", label: "Прийняти після доопрацювання" },
   { value: "REJECT", label: "Відхилити" },
 ];
+
+function getSubmissionFileUrl(fileName: string) {
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  return `${baseUrl.replace(
+    /\/$/,
+    "",
+  )}/uploads/submissions/${encodeURIComponent(fileName)}`;
+}
 
 export default function ReviewerReviewFormPage() {
   const { id } = useParams();
@@ -233,6 +241,25 @@ export default function ReviewerReviewFormPage() {
                     <p>Раунд рецензування: {currentRound}</p>
                   </div>
                 </div>
+
+                {submission.fileName && (
+                  <div className="review-form-page__file-panel">
+                    <div>
+                      <strong>Файл статті</strong>
+                      <p>{submission.fileName}</p>
+                    </div>
+
+                    <a
+                      href={getSubmissionFileUrl(submission.fileName)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="review-form-page__file-button"
+                    >
+                      <ExternalLink size={16} />
+                      <span>Відкрити файл</span>
+                    </a>
+                  </div>
+                )}
 
                 <div className="review-form-page__grid">
                   <div className="review-form-page__field">
@@ -463,6 +490,17 @@ export default function ReviewerReviewFormPage() {
                 <li>
                   <strong>Файл:</strong> {submission.fileName || "Не вказано"}
                 </li>
+                {submission.fileName && (
+                  <li>
+                    <a
+                      href={getSubmissionFileUrl(submission.fileName)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Відкрити файл статті
+                    </a>
+                  </li>
+                )}
               </ul>
             )}
           </div>

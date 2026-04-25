@@ -224,11 +224,13 @@ export default function AuthorSubmitPage() {
       } else {
         await createSubmission(buildPayload("SUBMITTED"));
         setSuccess("Роботу успішно подано.");
+        setForm(initialForm);
+        setFileName("");
       }
 
       setTimeout(() => {
         navigate("/author");
-      }, 2000);
+      }, 1200);
     } catch (e: any) {
       setError(
         e.message ||
@@ -262,7 +264,7 @@ export default function AuthorSubmitPage() {
 
       setTimeout(() => {
         navigate("/author");
-      }, 2000);
+      }, 1200);
     } catch (e: any) {
       setError(
         e.message ||
@@ -491,16 +493,27 @@ export default function AuthorSubmitPage() {
         </main>
 
         <aside className="author-submit__sidebar">
+
           <div className="author-submit__info-card">
             <div className="author-submit__info-header">
-              <Info size={18} />
-              <h3>Поради перед поданням</h3>
+              <FileText size={18} />
+              <h3>Правила оформлення</h3>
             </div>
+
             <ul>
-              <li>Перевірте правильність назви та анотації.</li>
-              <li>Переконайтеся, що файл оформлено за вимогами.</li>
-              <li>Уточніть дедлайн подання для обраного видання.</li>
+              <li>Файл має бути у форматі PDF або DOCX.</li>
+              <li>Обов’язково вкажіть назву, анотацію та ключові слова.</li>
+              <li>Перевірте структуру статті перед поданням.</li>
+              <li>Дотримуйтеся вимог обраного журналу або конференції.</li>
             </ul>
+
+            <a
+              className="author-submit__template-button"
+              href="/templates/article-template.docx"
+              download
+            >
+              Завантажити шаблон
+            </a>
           </div>
 
           <div className="author-submit__info-card">
@@ -515,6 +528,19 @@ export default function AuthorSubmitPage() {
               <li>Основний файл статті</li>
             </ul>
           </div>
+
+          <div className="author-submit__info-card">
+            <div className="author-submit__info-header">
+              <Info size={18} />
+              <h3>Поради перед поданням</h3>
+            </div>
+            <ul>
+              <li>Перевірте правильність назви та анотації.</li>
+              <li>Переконайтеся, що файл оформлено за вимогами.</li>
+              <li>Уточніть дедлайн подання для обраного видання.</li>
+            </ul>
+          </div>
+          
         </aside>
       </div>
     </section>
