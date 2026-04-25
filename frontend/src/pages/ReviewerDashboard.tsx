@@ -1,9 +1,4 @@
-import {
-  CheckCircle2,
-  Clock3,
-  FileText,
-  Search,
-} from "lucide-react";
+import { CheckCircle2, Clock3, FileText, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -60,6 +55,12 @@ function getAssignmentStatusClass(status: ReviewerAssignment["status"]) {
   }
 
   return "reviewer-dashboard__status reviewer-dashboard__status--accepted";
+}
+
+function getAssignmentPriority(status: ReviewerAssignment["status"]) {
+  if (status === "ASSIGNED") return 1;
+  if (status === "IN_PROGRESS") return 2;
+  return 3;
 }
 
 function formatDate(dateString: string) {
@@ -132,17 +133,28 @@ export default function ReviewerDashboard() {
   const filteredAssignments = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) return assignments;
+    const filtered = !query
+      ? assignments
+      : assignments.filter((item) => {
+          const title = item.submission.title.toLowerCase();
+          const venue = item.submission.venue.toLowerCase();
+          const keywords = item.submission.keywords.toLowerCase();
 
-    return assignments.filter((item) => {
-      const title = item.submission.title.toLowerCase();
-      const venue = item.submission.venue.toLowerCase();
-      const keywords = item.submission.keywords.toLowerCase();
+          return (
+            title.includes(query) ||
+            venue.includes(query) ||
+            keywords.includes(query)
+          );
+        });
+
+    return [...filtered].sort((a, b) => {
+      const priorityDiff =
+        getAssignmentPriority(a.status) - getAssignmentPriority(b.status);
+
+      if (priorityDiff !== 0) return priorityDiff;
 
       return (
-        title.includes(query) ||
-        venue.includes(query) ||
-        keywords.includes(query)
+        new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime()
       );
     });
   }, [assignments, search]);
@@ -153,7 +165,8 @@ export default function ReviewerDashboard() {
       assigned: assignments.filter((item) => item.status === "ASSIGNED").length,
       inProgress: assignments.filter((item) => item.status === "IN_PROGRESS")
         .length,
-      completed: assignments.filter((item) => item.status === "COMPLETED").length,
+      completed: assignments.filter((item) => item.status === "COMPLETED")
+        .length,
     };
   }, [assignments]);
 
@@ -269,9 +282,7 @@ export default function ReviewerDashboard() {
                   <div className="reviewer-dashboard__meta">
                     <span>Версія: {item.submission.version || 1}</span>
                     <span>Раунд: {item.round}</span>
-                    <span>
-                      Дата подання: {formatDate(item.submission.createdAt)}
-                    </span>
+                    <span>Призначено: {formatDate(item.assignedAt)}</span>
                     {item.submission.fileName && (
                       <span>Файл: {item.submission.fileName}</span>
                     )}
@@ -288,7 +299,9 @@ export default function ReviewerDashboard() {
                         onClick={() => handleTakeIntoWork(item.id)}
                         disabled={takingId === item.id}
                       >
-                        {takingId === item.id ? "Оновлення..." : "Взяти в роботу"}
+                        {takingId === item.id
+                          ? "Оновлення..."
+                          : "Взяти в роботу"}
                       </button>
                     )}
 
