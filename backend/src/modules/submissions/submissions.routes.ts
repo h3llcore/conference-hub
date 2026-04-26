@@ -11,10 +11,12 @@ import {
 } from "./submissions.controller.js";
 import { requireAuth } from "../../middlewares/auth.js";
 import { requireRole } from "../../middlewares/requireRole.js";
+import { upload } from "../../config/multer.js";
 
 const router = Router();
 
-router.post("/", requireAuth, createSubmissionHandler);
+router.post("/", requireAuth, upload.single("file"), createSubmissionHandler);
+
 router.get("/me", requireAuth, getMySubmissionsHandler);
 
 router.get(
@@ -38,7 +40,7 @@ router.get(
   getReviewerSubmissionByIdHandler,
 );
 
-router.patch("/:id", requireAuth, updateSubmissionHandler);
+router.patch("/:id", requireAuth, upload.single("file"), updateSubmissionHandler);
 
 router.patch(
   "/:id/status",

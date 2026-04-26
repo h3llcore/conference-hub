@@ -13,27 +13,35 @@ function getAuthHeaders(includeJson = false) {
   };
 }
 
+function isFormDataPayload(payload: unknown): payload is FormData {
+  return typeof FormData !== "undefined" && payload instanceof FormData;
+}
+
 async function parseJsonResponse(res: Response) {
   const text = await res.text();
 
+  let data: any = {};
+
   try {
-    const data = JSON.parse(text);
-
-    if (!res.ok) {
-      throw new Error(data.message || "Request failed");
-    }
-
-    return data;
+    data = text ? JSON.parse(text) : {};
   } catch {
     throw new Error("Сервер повернув некоректну відповідь");
   }
+
+  if (!res.ok) {
+    throw new Error(data.message || "Request failed");
+  }
+
+  return data;
 }
 
-export async function createSubmission(payload: any) {
+export async function createSubmission(payload: FormData | any) {
+  const isFormData = isFormDataPayload(payload);
+
   const res = await fetch(buildUrl("/submissions"), {
     method: "POST",
-    headers: getAuthHeaders(true),
-    body: JSON.stringify(payload),
+    headers: getAuthHeaders(!isFormData),
+    body: isFormData ? payload : JSON.stringify(payload),
   });
 
   return parseJsonResponse(res);
@@ -55,11 +63,13 @@ export async function getSubmissionById(id: string) {
   return parseJsonResponse(res);
 }
 
-export async function updateSubmission(id: string, payload: any) {
+export async function updateSubmission(id: string, payload: FormData | any) {
+  const isFormData = isFormDataPayload(payload);
+
   const res = await fetch(buildUrl(`/submissions/${id}`), {
     method: "PATCH",
-    headers: getAuthHeaders(true),
-    body: JSON.stringify(payload),
+    headers: getAuthHeaders(!isFormData),
+    body: isFormData ? payload : JSON.stringify(payload),
   });
 
   return parseJsonResponse(res);
@@ -97,7 +107,7 @@ export async function updateReviewerSubmissionStatus(
     | "REJECTED"
     | "REVISION_REQUIRED"
     | "RESUBMITTED"
-    | "PUBLISHED"
+    | "PUBLISHED",
 ) {
   const res = await fetch(buildUrl(`/submissions/${id}/status`), {
     method: "PATCH",

@@ -19,12 +19,21 @@ export async function createSubmissionHandler(req: Request, res: Response) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const status =
-      req.body?.status === "DRAFT"
-        ? SubmissionStatus.DRAFT
-        : SubmissionStatus.SUBMITTED;
+    const file = req.file as Express.Multer.File | undefined;
+    console.log("REQ BODY:", req.body);
+    console.log("REQ FILE:", req.file);
 
-    const submission = await createSubmission(userId, req.body, status);
+    const status =
+      req.body?.status === "DRAFT" ? SubmissionStatus.DRAFT : SubmissionStatus.SUBMITTED;
+
+    const submission = await createSubmission(
+      userId,
+      {
+        ...req.body,
+        fileName: file?.filename || req.body.fileName || null,
+      },
+      status
+    );
 
     return res.status(201).json({ submission });
   } catch (e: any) {
@@ -87,7 +96,12 @@ export async function updateSubmissionHandler(req: Request, res: Response) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const submission = await updateSubmission(id, userId, req.body);
+    const file = req.file as Express.Multer.File | undefined;
+
+    const submission = await updateSubmission(id, userId, {
+      ...req.body,
+      fileName: file?.filename || req.body.fileName || null,
+    });
 
     if (!submission) {
       return res.status(404).json({ message: "Submission not found" });
@@ -102,10 +116,7 @@ export async function updateSubmissionHandler(req: Request, res: Response) {
   }
 }
 
-export async function getReviewerSubmissionsHandler(
-  req: Request,
-  res: Response,
-) {
+export async function getReviewerSubmissionsHandler(req: Request, res: Response) {
   try {
     const submissions = await getReviewerSubmissions();
     return res.json({ submissions });
@@ -117,10 +128,7 @@ export async function getReviewerSubmissionsHandler(
   }
 }
 
-export async function getCommitteeSubmissionsHandler(
-  req: Request,
-  res: Response,
-) {
+export async function getCommitteeSubmissionsHandler(req: Request, res: Response) {
   try {
     const submissions = await getCommitteeSubmissions();
     return res.json({ submissions });
@@ -132,10 +140,7 @@ export async function getCommitteeSubmissionsHandler(
   }
 }
 
-export async function getReviewerSubmissionByIdHandler(
-  req: Request,
-  res: Response,
-) {
+export async function getReviewerSubmissionByIdHandler(req: Request, res: Response) {
   try {
     const { id } = req.params;
 
@@ -154,10 +159,7 @@ export async function getReviewerSubmissionByIdHandler(
   }
 }
 
-export async function updateSubmissionStatusHandler(
-  req: Request,
-  res: Response,
-) {
+export async function updateSubmissionStatusHandler(req: Request, res: Response) {
   try {
     const { id } = req.params;
     const { status } = req.body as {
@@ -187,10 +189,7 @@ export async function updateSubmissionStatusHandler(
       return res.status(400).json({ message: "invalid status" });
     }
 
-    const submission = await updateSubmissionStatus(
-      id,
-      status as SubmissionStatus,
-    );
+    const submission = await updateSubmissionStatus(id, status as SubmissionStatus);
 
     if (!submission) {
       return res.status(404).json({ message: "Submission not found" });

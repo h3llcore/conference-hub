@@ -66,6 +66,7 @@ export default function AuthorSubmitPage() {
 
   const [form, setForm] = useState<SubmitForm>(initialForm);
   const [fileName, setFileName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(isEditMode);
   const [venuesLoading, setVenuesLoading] = useState(false);
@@ -122,14 +123,14 @@ export default function AuthorSubmitPage() {
           title: submission.title || "",
           abstract: submission.abstract || "",
           keywords: submission.keywords || "",
-          venueType:
-            submission.venueType === "JOURNAL" ? "journal" : "conference",
+          venueType: submission.venueType === "JOURNAL" ? "journal" : "conference",
           venue: submission.venue || "",
           coAuthors: submission.coAuthors || "",
           notes: submission.notes || "",
         });
 
         setFileName(submission.fileName || "");
+        setSelectedFile(null);
         setCurrentStatus(submission.status || "");
         setCurrentVersion(submission.version || 1);
       } catch (e: any) {
@@ -150,9 +151,7 @@ export default function AuthorSubmitPage() {
   }, [id]);
 
   function handleChange(
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = event.target;
 
@@ -164,22 +163,34 @@ export default function AuthorSubmitPage() {
   }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    setFileName(file ? file.name : "");
+    const file = event.target.files?.[0] || null;
+
+    setSelectedFile(file);
+
+    if (file) {
+      setFileName(file.name);
+    }
   }
 
   function buildPayload(status: "DRAFT" | "SUBMITTED" | "RESUBMITTED") {
-    return {
-      title: form.title.trim(),
-      abstract: form.abstract.trim(),
-      keywords: form.keywords.trim(),
-      venueType: form.venueType === "journal" ? "JOURNAL" : "CONFERENCE",
-      venue: form.venue,
-      coAuthors: form.coAuthors.trim(),
-      notes: form.notes.trim(),
-      fileName: fileName || null,
-      status,
-    };
+    const formData = new FormData();
+
+    formData.append("title", form.title.trim());
+    formData.append("abstract", form.abstract.trim());
+    formData.append("keywords", form.keywords.trim());
+    formData.append("venueType", form.venueType === "journal" ? "JOURNAL" : "CONFERENCE");
+    formData.append("venue", form.venue);
+    formData.append("coAuthors", form.coAuthors.trim());
+    formData.append("notes", form.notes.trim());
+    formData.append("status", status);
+
+    if (selectedFile) {
+      formData.append("file", selectedFile);
+    } else if (fileName) {
+      formData.append("fileName", fileName);
+    }
+
+    return formData;
   }
 
   function validateRequiredFields() {
@@ -190,6 +201,16 @@ export default function AuthorSubmitPage() {
       !form.venue.trim()
     ) {
       setError("Будь ласка, заповніть обов’язкові поля.");
+      return false;
+    }
+
+    if (!isEditMode && !selectedFile) {
+      setError("Будь ласка, додайте файл роботи.");
+      return false;
+    }
+
+    if (isEditMode && !fileName && !selectedFile) {
+      setError("Будь ласка, додайте файл роботи.");
       return false;
     }
 
@@ -210,22 +231,23 @@ export default function AuthorSubmitPage() {
       setLoading(true);
 
       const submitStatus =
-        isEditMode && currentStatus === "REVISION_REQUIRED"
-          ? "RESUBMITTED"
-          : "SUBMITTED";
+        isEditMode && currentStatus === "REVISION_REQUIRED" ? "RESUBMITTED" : "SUBMITTED";
+
+      const payload = buildPayload(submitStatus);
 
       if (isEditMode && id) {
-        await updateSubmission(id, buildPayload(submitStatus));
+        await updateSubmission(id, payload);
         setSuccess(
           submitStatus === "RESUBMITTED"
             ? "Виправлену версію успішно подано повторно."
-            : "Подання успішно оновлено.",
+            : "Подання успішно оновлено."
         );
       } else {
-        await createSubmission(buildPayload("SUBMITTED"));
+        await createSubmission(payload);
         setSuccess("Роботу успішно подано.");
         setForm(initialForm);
         setFileName("");
+        setSelectedFile(null);
       }
 
       setTimeout(() => {
@@ -233,10 +255,7 @@ export default function AuthorSubmitPage() {
       }, 1200);
     } catch (e: any) {
       setError(
-        e.message ||
-          (isEditMode
-            ? "Не вдалося оновити подання."
-            : "Не вдалося подати роботу."),
+        e.message || (isEditMode ? "Не вдалося оновити подання." : "Не вдалося подати роботу.")
       );
     } finally {
       setLoading(false);
@@ -254,11 +273,13 @@ export default function AuthorSubmitPage() {
     try {
       setLoading(true);
 
+      const payload = buildPayload("DRAFT");
+
       if (isEditMode && id) {
-        await updateSubmission(id, buildPayload("DRAFT"));
+        await updateSubmission(id, payload);
         setSuccess("Чернетку успішно оновлено.");
       } else {
-        await createSubmission(buildPayload("DRAFT"));
+        await createSubmission(payload);
         setSuccess("Чернетку успішно збережено.");
       }
 
@@ -267,10 +288,7 @@ export default function AuthorSubmitPage() {
       }, 1200);
     } catch (e: any) {
       setError(
-        e.message ||
-          (isEditMode
-            ? "Не вдалося оновити чернетку."
-            : "Не вдалося зберегти чернетку."),
+        e.message || (isEditMode ? "Не вдалося оновити чернетку." : "Не вдалося зберегти чернетку.")
       );
     } finally {
       setLoading(false);
@@ -278,9 +296,7 @@ export default function AuthorSubmitPage() {
   }
 
   const filteredVenues = venues.filter((item) =>
-    form.venueType === "journal"
-      ? item.type === "JOURNAL"
-      : item.type === "CONFERENCE",
+    form.venueType === "journal" ? item.type === "JOURNAL" : item.type === "CONFERENCE"
   );
 
   const isRevisionMode = isEditMode && currentStatus === "REVISION_REQUIRED";
@@ -422,9 +438,7 @@ export default function AuthorSubmitPage() {
                 </div>
 
                 <div className="author-submit__field">
-                  <label htmlFor="notes">
-                    Примітки для редактора / оргкомітету
-                  </label>
+                  <label htmlFor="notes">Примітки для редактора / оргкомітету</label>
                   <textarea
                     id="notes"
                     name="notes"
@@ -442,6 +456,7 @@ export default function AuthorSubmitPage() {
                     <input
                       id="file"
                       type="file"
+                      accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       hidden
                       onChange={handleFileChange}
                     />
@@ -493,7 +508,6 @@ export default function AuthorSubmitPage() {
         </main>
 
         <aside className="author-submit__sidebar">
-
           <div className="author-submit__info-card">
             <div className="author-submit__info-header">
               <FileText size={18} />
@@ -540,7 +554,6 @@ export default function AuthorSubmitPage() {
               <li>Уточніть дедлайн подання для обраного видання.</li>
             </ul>
           </div>
-          
         </aside>
       </div>
     </section>
