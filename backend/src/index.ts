@@ -7,6 +7,7 @@ import venueRoutes from "./modules/venues/venue.routes.js";
 import submissionsRoutes from "./modules/submissions/submissions.routes.js";
 import assignmentsRoutes from "./modules/assignments/assignments.routes.js";
 import reviewsRoutes from "./modules/reviews/reviews.routes.js";
+import path from "path";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ const app = express();
 
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
+app.use("/uploads", express.static(path.resolve("uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/venues", venueRoutes);

@@ -65,7 +65,6 @@ const initialForm: ReviewForm = {
 
 const scoreOptions: { value: ReviewScore; label: string }[] = [
   { value: "GOOD", label: "Добре" },
-  { value: "SATISFACTORY", label: "Задовільно" },
   { value: "NEEDS_IMPROVEMENT", label: "Потребує доопрацювання" },
   { value: "UNSATISFACTORY", label: "Незадовільно" },
 ];
@@ -76,8 +75,14 @@ const decisionOptions: { value: ReviewDecision; label: string }[] = [
   { value: "REJECT", label: "Відхилити" },
 ];
 
+function normalizeScore(value: ReviewScore): ReviewScore {
+  if (value === "SATISFACTORY") return "NEEDS_IMPROVEMENT";
+  return value;
+}
+
 function getSubmissionFileUrl(fileName: string) {
   const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   return `${baseUrl.replace(
     /\/$/,
     "",
@@ -128,14 +133,14 @@ export default function ReviewerReviewFormPage() {
 
         if (reviewData.review) {
           setForm({
-            titleScore: reviewData.review.titleScore,
-            relevanceScore: reviewData.review.relevanceScore,
-            abstractScore: reviewData.review.abstractScore,
-            structureScore: reviewData.review.structureScore,
-            methodologyScore: reviewData.review.methodologyScore,
-            formattingScore: reviewData.review.formattingScore,
-            referencesScore: reviewData.review.referencesScore,
-            overallScore: reviewData.review.overallScore,
+            titleScore: normalizeScore(reviewData.review.titleScore),
+            relevanceScore: normalizeScore(reviewData.review.relevanceScore),
+            abstractScore: normalizeScore(reviewData.review.abstractScore),
+            structureScore: normalizeScore(reviewData.review.structureScore),
+            methodologyScore: normalizeScore(reviewData.review.methodologyScore),
+            formattingScore: normalizeScore(reviewData.review.formattingScore),
+            referencesScore: normalizeScore(reviewData.review.referencesScore),
+            overallScore: normalizeScore(reviewData.review.overallScore),
             comments: reviewData.review.comments || "",
             recommendations: reviewData.review.recommendations || "",
             conclusion: reviewData.review.conclusion || "",

@@ -1,3 +1,4 @@
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getAuthorSubmissionReviews } from "../features/reviews/reviews.api";
@@ -22,23 +23,27 @@ type AuthorReview = {
   updatedAt: string;
 };
 
+function normalizeScore(value: string) {
+  if (value === "SATISFACTORY") return "NEEDS_IMPROVEMENT";
+  return value;
+}
+
 function formatScore(value: string) {
-  if (value === "GOOD") return "Добре";
-  if (value === "SATISFACTORY") return "Задовільно";
-  if (value === "NEEDS_IMPROVEMENT") return "Потребує доопрацювання";
+  const normalized = normalizeScore(value);
+
+  if (normalized === "GOOD") return "Добре";
+  if (normalized === "NEEDS_IMPROVEMENT") return "Потребує доопрацювання";
   return "Незадовільно";
 }
 
 function getScoreClass(value: string) {
-  if (value === "GOOD") {
+  const normalized = normalizeScore(value);
+
+  if (normalized === "GOOD") {
     return "author-reviews__score author-reviews__score--good";
   }
 
-  if (value === "SATISFACTORY") {
-    return "author-reviews__score author-reviews__score--satisfactory";
-  }
-
-  if (value === "NEEDS_IMPROVEMENT") {
+  if (normalized === "NEEDS_IMPROVEMENT") {
     return "author-reviews__score author-reviews__score--revision";
   }
 
@@ -50,6 +55,7 @@ function formatDecision(value: string) {
   if (value === "ACCEPT_WITH_REVISIONS") {
     return "Прийняти після доопрацювання";
   }
+
   return "Відхилити";
 }
 
@@ -65,20 +71,20 @@ function getDecisionClass(value: string) {
   return "author-reviews__decision author-reviews__decision--reject";
 }
 
+function getDecisionIcon(value: string) {
+  if (value === "ACCEPT") return <CheckCircle2 size={18} />;
+  if (value === "ACCEPT_WITH_REVISIONS") return <AlertTriangle size={18} />;
+  return <XCircle size={18} />;
+}
+
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("uk-UA");
 }
 
-function ScoreRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function ScoreRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="author-reviews__score-row">
-      <strong>{label}</strong>
+      <span className="author-reviews__score-label">{label}</span>
       <span className={getScoreClass(value)}>{formatScore(value)}</span>
     </div>
   );
@@ -171,7 +177,8 @@ export default function AuthorReviewsPage() {
                   </div>
 
                   <div className={getDecisionClass(review.decision)}>
-                    {formatDecision(review.decision)}
+                    {getDecisionIcon(review.decision)}
+                    <span>{formatDecision(review.decision)}</span>
                   </div>
                 </div>
 
@@ -214,24 +221,29 @@ export default function AuthorReviewsPage() {
                 <div className="author-reviews__section">
                   <h3>Коментарі рецензента</h3>
 
-                  <div className="author-reviews__text-block">
-                    <strong>Основні зауваження</strong>
-                    <p>{review.comments || "—"}</p>
-                  </div>
+                  <div className="author-reviews__comments">
+                    <div className="author-reviews__text-block">
+                      <strong>Основні зауваження</strong>
+                      <p>{review.comments || "—"}</p>
+                    </div>
 
-                  <div className="author-reviews__text-block">
-                    <strong>Рекомендації автору</strong>
-                    <p>{review.recommendations || "—"}</p>
-                  </div>
+                    <div className="author-reviews__text-block">
+                      <strong>Рекомендації автору</strong>
+                      <p>{review.recommendations || "—"}</p>
+                    </div>
 
-                  <div className="author-reviews__text-block">
-                    <strong>Висновок рецензента</strong>
-                    <p>{review.conclusion || "—"}</p>
+                    <div className="author-reviews__text-block">
+                      <strong>Висновок рецензента</strong>
+                      <p>{review.conclusion || "—"}</p>
+                    </div>
                   </div>
                 </div>
 
                 <div className={getDecisionClass(review.decision)}>
-                  Підсумкове рішення: {formatDecision(review.decision)}
+                  {getDecisionIcon(review.decision)}
+                  <span>
+                    Підсумкове рішення: {formatDecision(review.decision)}
+                  </span>
                 </div>
               </article>
             ))}
