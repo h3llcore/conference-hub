@@ -1,4 +1,5 @@
 import { Router } from "express";
+import path from "path";
 import {
   createSubmissionHandler,
   getMySubmissionsHandler,
@@ -39,6 +40,23 @@ router.get(
   requireRole(["REVIEWER"]),
   getReviewerSubmissionByIdHandler,
 );
+
+router.get("/file/:fileName/download", requireAuth, (req, res) => {
+  const { fileName } = req.params;
+
+  const filePath = path.join(
+    process.cwd(),
+    "uploads",
+    "submissions",
+    fileName,
+  );
+
+  res.download(filePath, fileName, (err) => {
+    if (err && !res.headersSent) {
+      return res.status(404).json({ message: "File not found" });
+    }
+  });
+});
 
 router.patch("/:id", requireAuth, upload.single("file"), updateSubmissionHandler);
 

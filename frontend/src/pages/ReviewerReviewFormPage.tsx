@@ -1,5 +1,10 @@
-import { ExternalLink, FileText, MessageSquareText } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  MessageSquareText,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getReviewerSubmissionById } from "../features/submissions/submissions.api";
 import {
@@ -89,6 +94,19 @@ function getSubmissionFileUrl(fileName: string) {
   )}/uploads/submissions/${encodeURIComponent(fileName)}`;
 }
 
+function getSubmissionDownloadUrl(fileName: string) {
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  return `${baseUrl.replace(
+    /\/$/,
+    "",
+  )}/api/submissions/file/${encodeURIComponent(fileName)}/download`;
+}
+
+function isPdfFile(fileName?: string | null) {
+  return Boolean(fileName?.toLowerCase().endsWith(".pdf"));
+}
+
 export default function ReviewerReviewFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -97,9 +115,17 @@ export default function ReviewerReviewFormPage() {
   const [form, setForm] = useState<ReviewForm>(initialForm);
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const fileUrl = useMemo(() => {
+    if (!submission?.fileName) return "";
+    return getSubmissionFileUrl(submission.fileName);
+  }, [submission?.fileName]);
+
+  const canPreviewPdf = isPdfFile(submission?.fileName);
 
   useEffect(() => {
     let isMounted = true;
@@ -175,6 +201,43 @@ export default function ReviewerReviewFormPage() {
     }));
   }
 
+  async function handleDownloadFile() {
+    if (!submission?.fileName) return;
+
+    try {
+      setDownloading(true);
+      setError("");
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(getSubmissionDownloadUrl(submission.fileName), {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Не вдалося завантажити файл.");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = submission.fileName;
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message || "Не вдалося завантажити файл.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -208,8 +271,8 @@ export default function ReviewerReviewFormPage() {
         <p className="review-form-page__eyebrow">Форма рецензента</p>
         <h1 className="review-form-page__title">Оцінювання подання</h1>
         <p className="review-form-page__description">
-          Заповніть критерії оцінювання, додайте зауваження та сформуйте
-          підсумкове рішення щодо статті.
+          Перегляньте файл статті, оцініть роботу за критеріями та сформуйте
+          підсумкове рішення.
         </p>
       </div>
 
@@ -248,22 +311,61 @@ export default function ReviewerReviewFormPage() {
                 </div>
 
                 {submission.fileName && (
-                  <div className="review-form-page__file-panel">
-                    <div>
-                      <strong>Файл статті</strong>
-                      <p>{submission.fileName}</p>
+                  <section className="review-form-page__document">
+                    <div className="review-form-page__document-header">
+                      <div className="review-form-page__document-icon">
+                        <FileText size={22} />
+                      </div>
+
+                      <div className="review-form-page__document-info">
+                        <span>Файл статті</span>
+                        <strong>{submission.fileName}</strong>
+                        <p>
+                          {canPreviewPdf
+                            ? "PDF-файл можна переглянути нижче без завантаження."
+                            : "DOCX-файл можна відкрити або завантажити окремо."}
+                        </p>
+                      </div>
+
+                      <div className="review-form-page__document-actions">
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="review-form-page__file-button"
+                        >
+                          <ExternalLink size={16} />
+                          <span>Відкрити</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={handleDownloadFile}
+                          className="review-form-page__file-button review-form-page__file-button--secondary"
+                          disabled={downloading}
+                        >
+                          <Download size={16} />
+                          <span>
+                            {downloading ? "Завантаження..." : "Завантажити"}
+                          </span>
+                        </button>
+                      </div>
                     </div>
 
-                    <a
-                      href={getSubmissionFileUrl(submission.fileName)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="review-form-page__file-button"
-                    >
-                      <ExternalLink size={16} />
-                      <span>Відкрити файл</span>
-                    </a>
-                  </div>
+                    {canPreviewPdf ? (
+                      <div className="review-form-page__pdf-preview">
+                        <iframe
+                          title="Попередній перегляд статті"
+                          src={fileUrl}
+                        />
+                      </div>
+                    ) : (
+                      <div className="review-form-page__docx-notice">
+                        Попередній перегляд доступний тільки для PDF. Для DOCX
+                        скористайтесь кнопкою “Відкрити” або “Завантажити”.
+                      </div>
+                    )}
+                  </section>
                 )}
 
                 <div className="review-form-page__grid">
@@ -495,17 +597,6 @@ export default function ReviewerReviewFormPage() {
                 <li>
                   <strong>Файл:</strong> {submission.fileName || "Не вказано"}
                 </li>
-                {submission.fileName && (
-                  <li>
-                    <a
-                      href={getSubmissionFileUrl(submission.fileName)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Відкрити файл статті
-                    </a>
-                  </li>
-                )}
               </ul>
             )}
           </div>
@@ -516,8 +607,8 @@ export default function ReviewerReviewFormPage() {
               <h3>Підказка рецензенту</h3>
             </div>
             <ul>
+              <li>Спочатку перегляньте файл статті.</li>
               <li>Оцініть відповідність статті тематиці видання.</li>
-              <li>Зверніть увагу на якість анотації й структуру.</li>
               <li>Додайте змістовні зауваження та рекомендації автору.</li>
             </ul>
           </div>
