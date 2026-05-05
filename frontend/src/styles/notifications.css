@@ -1,0 +1,54 @@
+.notification {
+  position: relative;
+}
+
+.notification__btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  position: relative;
+}
+
+.notification__badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  background: red;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.notification__dropdown {
+  position: absolute;
+  right: 0;
+  top: 40px;
+  width: 300px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  padding: 10px;
+  z-index: 1000;
+}
+
+.notification__item {
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.notification__item:hover {
+  background: #f5f5f5;
+}
+
+.notification__item.unread {
+  background: #eef6ff;
+}
+
+.notification__empty {
+  text-align: center;
+  color: gray;
+}

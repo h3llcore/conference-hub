@@ -1,5 +1,10 @@
 import { prisma } from "../../config/prisma.js";
-import { AssignmentStatus, SubmissionStatus } from "@prisma/client";
+import {
+  AssignmentStatus,
+  NotificationType,
+  SubmissionStatus,
+} from "@prisma/client";
+import { createNotification } from "../notifications/notifications.service.js";
 
 export async function assignReviewersToSubmission(
   submissionId: string,
@@ -15,6 +20,7 @@ export async function assignReviewersToSubmission(
     where: { id: submissionId },
     select: {
       id: true,
+      title: true,
       currentRound: true,
       status: true,
     },
@@ -105,6 +111,18 @@ export async function assignReviewersToSubmission(
       },
     });
   });
+
+  await Promise.all(
+    uniqueReviewerIds.map((reviewerId) =>
+      createNotification({
+        userId: reviewerId,
+        title: "Нове призначення",
+        message: `Вас призначено рецензентом для роботи "${submission.title}".`,
+        type: NotificationType.REVIEWER_ASSIGNED,
+        link: `/reviewer/review/${submission.id}`,
+      }),
+    ),
+  );
 
   return prisma.submissionReviewer.findMany({
     where: {

@@ -1,9 +1,11 @@
 import { prisma } from "../../config/prisma.js";
 import {
   AssignmentStatus,
+  NotificationType,
   ReviewDecision,
   ReviewScore,
 } from "@prisma/client";
+import { createNotification } from "../notifications/notifications.service.js";
 
 type ReviewPayload = {
   submissionId: string;
@@ -45,6 +47,25 @@ async function findReviewerActiveAssignment(
     },
     orderBy: [{ round: "desc" }, { assignedAt: "desc" }],
   });
+}
+
+async function notifyCommitteeAboutReview(submissionId: string, submissionTitle: string) {
+  const committeeUsers = await prisma.user.findMany({
+    where: { role: "COMMITTEE" },
+    select: { id: true },
+  });
+
+  await Promise.all(
+    committeeUsers.map((user) =>
+      createNotification({
+        userId: user.id,
+        title: "Нову рецензію подано",
+        message: `Рецензент подав рецензію на роботу "${submissionTitle}".`,
+        type: NotificationType.REVIEW_SUBMITTED,
+        link: `/committee?submission=${submissionId}`,
+      }),
+    ),
+  );
 }
 
 export async function createOrUpdateReview(
@@ -102,6 +123,12 @@ export async function createOrUpdateReview(
       decision: payload.decision,
     },
     include: {
+      submission: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
       reviewer: {
         select: {
           id: true,
@@ -119,6 +146,8 @@ export async function createOrUpdateReview(
       status: AssignmentStatus.COMPLETED,
     },
   });
+
+  await notifyCommitteeAboutReview(review.submission.id, review.submission.title);
 
   return review;
 }

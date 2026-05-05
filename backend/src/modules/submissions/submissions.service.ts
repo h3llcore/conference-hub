@@ -1,16 +1,37 @@
 import { prisma } from "../../config/prisma.js";
 import {
   AssignmentStatus,
+  NotificationType,
   SubmissionStatus,
   VenueType,
 } from "@prisma/client";
+import { createNotification } from "../notifications/notifications.service.js";
+
+async function notifyCommitteeAboutSubmission(submissionId: string, title: string) {
+  const committeeUsers = await prisma.user.findMany({
+    where: { role: "COMMITTEE" },
+    select: { id: true },
+  });
+
+  await Promise.all(
+    committeeUsers.map((user) =>
+      createNotification({
+        userId: user.id,
+        title: "Нове подання",
+        message: `Автор подав роботу "${title}".`,
+        type: NotificationType.SUBMISSION_CREATED,
+        link: `/committee?submission=${submissionId}`,
+      }),
+    ),
+  );
+}
 
 export async function createSubmission(
   userId: string,
   data: any,
   status: SubmissionStatus = SubmissionStatus.SUBMITTED,
 ) {
-  return prisma.submission.create({
+  const submission = await prisma.submission.create({
     data: {
       title: data.title,
       abstract: data.abstract,
@@ -24,6 +45,12 @@ export async function createSubmission(
       authorId: userId,
     },
   });
+
+  if (status === SubmissionStatus.SUBMITTED) {
+    await notifyCommitteeAboutSubmission(submission.id, submission.title);
+  }
+
+  return submission;
 }
 
 export async function getMySubmissions(userId: string) {
@@ -75,7 +102,7 @@ export async function updateSubmission(
     nextStatus = SubmissionStatus.SUBMITTED;
   }
 
-  return prisma.submission.update({
+  const submission = await prisma.submission.update({
     where: { id: submissionId },
     data: {
       title: data.title,
@@ -91,6 +118,15 @@ export async function updateSubmission(
       currentRound: nextRound,
     },
   });
+
+  if (
+    nextStatus === SubmissionStatus.SUBMITTED ||
+    nextStatus === SubmissionStatus.RESUBMITTED
+  ) {
+    await notifyCommitteeAboutSubmission(submission.id, submission.title);
+  }
+
+  return submission;
 }
 
 export async function getReviewerSubmissions() {
@@ -169,17 +205,13 @@ export async function getReviewerSubmissionById(submissionId: string) {
 
 async function assertLatestRoundIsCompleted(submissionId: string) {
   const assignments = await prisma.submissionReviewer.findMany({
-    where: {
-      submissionId,
-    },
+    where: { submissionId },
     select: {
       id: true,
       round: true,
       status: true,
     },
-    orderBy: {
-      round: "desc",
-    },
+    orderBy: { round: "desc" },
   });
 
   if (assignments.length === 0) {
@@ -207,6 +239,41 @@ async function assertLatestRoundIsCompleted(submissionId: string) {
     (error as any).status = 409;
     throw error;
   }
+}
+
+function getStatusNotificationText(status: SubmissionStatus) {
+  if (status === SubmissionStatus.REVISION_REQUIRED) {
+    return {
+      title: "Потрібне доопрацювання",
+      message: "Вашу роботу повернуто на доопрацювання.",
+    };
+  }
+
+  if (status === SubmissionStatus.ACCEPTED) {
+    return {
+      title: "Роботу прийнято",
+      message: "Вашу роботу прийнято до публікації.",
+    };
+  }
+
+  if (status === SubmissionStatus.REJECTED) {
+    return {
+      title: "Роботу відхилено",
+      message: "Вашу роботу відхилено за результатами розгляду.",
+    };
+  }
+
+  if (status === SubmissionStatus.PUBLISHED) {
+    return {
+      title: "Роботу опубліковано",
+      message: "Вашу роботу опубліковано.",
+    };
+  }
+
+  return {
+    title: "Статус подання змінено",
+    message: `Статус вашої роботи змінено на ${status}.`,
+  };
 }
 
 export async function updateSubmissionStatus(
@@ -242,7 +309,7 @@ export async function updateSubmissionStatus(
     await assertLatestRoundIsCompleted(submissionId);
   }
 
-  return prisma.submission.update({
+  const submission = await prisma.submission.update({
     where: { id: submissionId },
     data: {
       status,
@@ -269,4 +336,23 @@ export async function updateSubmissionStatus(
       },
     },
   });
+
+  if (
+    status === SubmissionStatus.REVISION_REQUIRED ||
+    status === SubmissionStatus.ACCEPTED ||
+    status === SubmissionStatus.REJECTED ||
+    status === SubmissionStatus.PUBLISHED
+  ) {
+    const notificationText = getStatusNotificationText(status);
+
+    await createNotification({
+      userId: submission.authorId,
+      title: notificationText.title,
+      message: `${notificationText.message} Назва: "${submission.title}".`,
+      type: NotificationType.SUBMISSION_STATUS_CHANGED,
+      link: `/author/submission/${submission.id}`,
+    });
+  }
+
+  return submission;
 }

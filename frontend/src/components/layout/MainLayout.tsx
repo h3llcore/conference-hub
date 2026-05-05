@@ -1,9 +1,10 @@
-import { Bell, Flag, LogIn, Upload, User } from "lucide-react";
+import { Flag, LogIn, Upload, User } from "lucide-react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import HeaderDropdown from "./HeaderDropdown";
 import HeaderProfileMenu from "./HeaderProfileMenu";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useLanguage } from "../../features/language/LanguageContext";
+import NotificationDropdown from "../notifications/NotificationDropdown";
 
 import "../../styles/layout.css";
 import "../../styles/header-dropdown.css";
@@ -16,15 +17,15 @@ const conferenceItems = [
 ];
 
 const journalItems = [
-  { label: "Каталог журналів", to: "/" },
+  { label: "Каталог журналів", to: "/journals" },
   { label: "Рейтингові журнали", to: "/" },
   { label: "Нові випуски", to: "/" },
 ];
 
 const submissionItems = [
-  { label: "Подати статтю", to: "/" },
+  { label: "Подати статтю", to: "/author/submit" },
   { label: "Вимоги до оформлення", to: "/" },
-  { label: "Статус подання", to: "/" },
+  { label: "Статус подання", to: "/author" },
 ];
 
 const contactItems = [
@@ -83,6 +84,7 @@ export default function MainLayout() {
           <nav className="layout-header__menu">
             <HeaderDropdown title="Конференції" items={conferenceItems} />
             <HeaderDropdown title="Наукові журнали" items={journalItems} />
+
             <HeaderDropdown
               title="Подання матеріалів"
               items={submissionItems}
@@ -106,13 +108,7 @@ export default function MainLayout() {
           </nav>
 
           <div className="layout-header__right">
-            <button
-              type="button"
-              className="layout-header__icon-button"
-              aria-label="Сповіщення"
-            >
-              <Bell size={18} />
-            </button>
+            {user && <NotificationDropdown />}
 
             <button
               type="button"
