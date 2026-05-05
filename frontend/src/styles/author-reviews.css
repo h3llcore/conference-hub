@@ -167,7 +167,9 @@
 
 .author-reviews__comments {
   display: grid;
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 26px;
 }
 
 .author-reviews__text-block {
