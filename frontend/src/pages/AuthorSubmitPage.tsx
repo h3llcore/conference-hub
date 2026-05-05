@@ -1,5 +1,5 @@
 import { FileText, Info, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../styles/author-submit.css";
 import {
@@ -58,15 +58,22 @@ const initialForm: SubmitForm = {
   notes: "",
 };
 
+const allowedFileTypes = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
 export default function AuthorSubmitPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isEditMode = Boolean(id);
 
   const [form, setForm] = useState<SubmitForm>(initialForm);
   const [fileName, setFileName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(isEditMode);
   const [venuesLoading, setVenuesLoading] = useState(false);
@@ -123,7 +130,8 @@ export default function AuthorSubmitPage() {
           title: submission.title || "",
           abstract: submission.abstract || "",
           keywords: submission.keywords || "",
-          venueType: submission.venueType === "JOURNAL" ? "journal" : "conference",
+          venueType:
+            submission.venueType === "JOURNAL" ? "journal" : "conference",
           venue: submission.venue || "",
           coAuthors: submission.coAuthors || "",
           notes: submission.notes || "",
@@ -151,7 +159,9 @@ export default function AuthorSubmitPage() {
   }, [id]);
 
   function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) {
     const { name, value } = event.target;
 
@@ -162,13 +172,61 @@ export default function AuthorSubmitPage() {
     }));
   }
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] || null;
+  function isAllowedFile(file: File) {
+    const fileName = file.name.toLowerCase();
+
+    return (
+      allowedFileTypes.includes(file.type) ||
+      fileName.endsWith(".pdf") ||
+      fileName.endsWith(".docx")
+    );
+  }
+
+  function setWorkFile(file: File | null) {
+    setError("");
+
+    if (!file) {
+      setSelectedFile(null);
+      setFileName("");
+      return;
+    }
+
+    if (!isAllowedFile(file)) {
+      setError("Підтримуються лише файли у форматі PDF або DOCX.");
+      return;
+    }
 
     setSelectedFile(file);
+    setFileName(file.name);
+  }
 
-    if (file) {
-      setFileName(file.name);
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] || null;
+    setWorkFile(file);
+  }
+
+  function handleDragOver(event: React.DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragActive(true);
+  }
+
+  function handleDragLeave(event: React.DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragActive(false);
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragActive(false);
+
+    const file = event.dataTransfer.files?.[0] || null;
+    setWorkFile(file);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   }
 
@@ -178,7 +236,10 @@ export default function AuthorSubmitPage() {
     formData.append("title", form.title.trim());
     formData.append("abstract", form.abstract.trim());
     formData.append("keywords", form.keywords.trim());
-    formData.append("venueType", form.venueType === "journal" ? "JOURNAL" : "CONFERENCE");
+    formData.append(
+      "venueType",
+      form.venueType === "journal" ? "JOURNAL" : "CONFERENCE",
+    );
     formData.append("venue", form.venue);
     formData.append("coAuthors", form.coAuthors.trim());
     formData.append("notes", form.notes.trim());
@@ -223,15 +284,15 @@ export default function AuthorSubmitPage() {
     setError("");
     setSuccess("");
 
-    if (!validateRequiredFields()) {
-      return;
-    }
+    if (!validateRequiredFields()) return;
 
     try {
       setLoading(true);
 
       const submitStatus =
-        isEditMode && currentStatus === "REVISION_REQUIRED" ? "RESUBMITTED" : "SUBMITTED";
+        isEditMode && currentStatus === "REVISION_REQUIRED"
+          ? "RESUBMITTED"
+          : "SUBMITTED";
 
       const payload = buildPayload(submitStatus);
 
@@ -240,7 +301,7 @@ export default function AuthorSubmitPage() {
         setSuccess(
           submitStatus === "RESUBMITTED"
             ? "Виправлену версію успішно подано повторно."
-            : "Подання успішно оновлено."
+            : "Подання успішно оновлено.",
         );
       } else {
         await createSubmission(payload);
@@ -255,7 +316,10 @@ export default function AuthorSubmitPage() {
       }, 1200);
     } catch (e: any) {
       setError(
-        e.message || (isEditMode ? "Не вдалося оновити подання." : "Не вдалося подати роботу.")
+        e.message ||
+          (isEditMode
+            ? "Не вдалося оновити подання."
+            : "Не вдалося подати роботу."),
       );
     } finally {
       setLoading(false);
@@ -266,9 +330,7 @@ export default function AuthorSubmitPage() {
     setError("");
     setSuccess("");
 
-    if (!validateRequiredFields()) {
-      return;
-    }
+    if (!validateRequiredFields()) return;
 
     try {
       setLoading(true);
@@ -288,7 +350,10 @@ export default function AuthorSubmitPage() {
       }, 1200);
     } catch (e: any) {
       setError(
-        e.message || (isEditMode ? "Не вдалося оновити чернетку." : "Не вдалося зберегти чернетку.")
+        e.message ||
+          (isEditMode
+            ? "Не вдалося оновити чернетку."
+            : "Не вдалося зберегти чернетку."),
       );
     } finally {
       setLoading(false);
@@ -296,7 +361,9 @@ export default function AuthorSubmitPage() {
   }
 
   const filteredVenues = venues.filter((item) =>
-    form.venueType === "journal" ? item.type === "JOURNAL" : item.type === "CONFERENCE"
+    form.venueType === "journal"
+      ? item.type === "JOURNAL"
+      : item.type === "CONFERENCE",
   );
 
   const isRevisionMode = isEditMode && currentStatus === "REVISION_REQUIRED";
@@ -438,7 +505,9 @@ export default function AuthorSubmitPage() {
                 </div>
 
                 <div className="author-submit__field">
-                  <label htmlFor="notes">Примітки для редактора / оргкомітету</label>
+                  <label htmlFor="notes">
+                    Примітки для редактора / оргкомітету
+                  </label>
                   <textarea
                     id="notes"
                     name="notes"
@@ -452,23 +521,39 @@ export default function AuthorSubmitPage() {
                 <div className="author-submit__field">
                   <label htmlFor="file">Файл роботи *</label>
 
-                  <label className="author-submit__upload-box" htmlFor="file">
+                  <label
+                    className={`author-submit__upload-box ${
+                      isDragActive ? "drag-active" : ""
+                    }`}
+                    htmlFor="file"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     <input
+                      ref={fileInputRef}
                       id="file"
                       type="file"
                       accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       hidden
                       onChange={handleFileChange}
                     />
+
                     <div className="author-submit__upload-icon">
                       <Upload size={20} />
                     </div>
+
                     <div>
                       <p className="author-submit__upload-title">
-                        {fileName || "Натисніть, щоб вибрати файл"}
+                        {isDragActive
+                          ? "Відпустіть файл, щоб додати його"
+                          : fileName ||
+                            "Перетягніть файл сюди або натисніть, щоб вибрати"}
                       </p>
                       <span className="author-submit__upload-hint">
-                        Підтримувані формати: PDF, DOCX
+                        {isDragActive
+                          ? "Файл буде автоматично прикріплено до подання"
+                          : "Підтримувані формати: PDF, DOCX"}
                       </span>
                     </div>
                   </label>

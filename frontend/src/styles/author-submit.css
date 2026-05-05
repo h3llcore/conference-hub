@@ -328,6 +328,28 @@
   background: #1e293b;
 }
 
+/* DRAG ACTIVE STATE */
+.author-submit__upload-box.drag-active {
+  border-color: #2563eb;
+  background: #e0f2fe;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.author-submit__upload-box * {
+  pointer-events: none;
+}
+
+/* FILE NAME */
+.author-submit__upload-title {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+/* HOVER */
+.author-submit__upload-box:hover {
+  border-color: #2563eb;
+}
+
 @media (max-width: 1024px) {
   .author-submit {
     width: min(100% - 32px, 900px);
