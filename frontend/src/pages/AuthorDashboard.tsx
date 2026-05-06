@@ -99,9 +99,12 @@ export default function AuthorDashboard() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadSubmissions() {
+    async function loadSubmissions(showLoader = false) {
       try {
-        setLoading(true);
+        if (showLoader) {
+          setLoading(true);
+        }
+
         setError("");
 
         const data = await getMySubmissions();
@@ -120,10 +123,15 @@ export default function AuthorDashboard() {
       }
     }
 
-    loadSubmissions();
+    loadSubmissions(true);
+
+    const intervalId = window.setInterval(() => {
+      loadSubmissions(false);
+    }, 5000);
 
     return () => {
       isMounted = false;
+      window.clearInterval(intervalId);
     };
   }, []);
 

@@ -31,7 +31,15 @@ export default function NotificationDropdown() {
       const data = await getMyNotifications();
       const items: NotificationItem[] = data.notifications || [];
 
-      setNotifications(items.filter((item) => !item.isRead));
+      setNotifications((prev) => {
+        const unread = items.filter((item) => !item.isRead);
+
+        if (JSON.stringify(prev) === JSON.stringify(unread)) {
+          return prev;
+        }
+
+        return unread;
+      });
       setUnreadCount(data.unreadCount || 0);
     } catch (e) {
       console.error(e);
@@ -41,7 +49,13 @@ export default function NotificationDropdown() {
   useEffect(() => {
     loadNotifications();
 
-    const intervalId = window.setInterval(loadNotifications, 15000);
+    const intervalId = window.setInterval(async () => {
+      try {
+        await loadNotifications();
+      } catch (e) {
+        console.error(e);
+      }
+    }, 5000);
 
     return () => {
       window.clearInterval(intervalId);
@@ -50,10 +64,7 @@ export default function NotificationDropdown() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(event.target as Node)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
@@ -83,9 +94,7 @@ export default function NotificationDropdown() {
     try {
       await markNotificationAsRead(notification.id);
 
-      setNotifications((prev) =>
-        prev.filter((item) => item.id !== notification.id),
-      );
+      setNotifications((prev) => prev.filter((item) => item.id !== notification.id));
 
       setUnreadCount((prev) => Math.max(prev - 1, 0));
       setOpen(false);
@@ -108,9 +117,7 @@ export default function NotificationDropdown() {
       >
         <Bell size={18} />
 
-        {unreadCount > 0 && (
-          <span className="notification__badge">{unreadCount}</span>
-        )}
+        {unreadCount > 0 && <span className="notification__badge">{unreadCount}</span>}
       </button>
 
       {open && (
@@ -118,20 +125,12 @@ export default function NotificationDropdown() {
           <div className="notification__top">
             <div>
               <h3>Сповіщення</h3>
-              <p>
-                {unreadCount > 0
-                  ? `Непрочитаних: ${unreadCount}`
-                  : "Нових сповіщень немає"}
-              </p>
+              <p>{unreadCount > 0 ? `Непрочитаних: ${unreadCount}` : "Нових сповіщень немає"}</p>
             </div>
           </div>
 
           {notifications.length > 0 && (
-            <button
-              type="button"
-              className="notification__read-all"
-              onClick={handleMarkAllAsRead}
-            >
+            <button type="button" className="notification__read-all" onClick={handleMarkAllAsRead}>
               <CheckCheck size={16} />
               <span>Позначити все як прочитане</span>
             </button>
@@ -157,15 +156,12 @@ export default function NotificationDropdown() {
                     <strong>{notification.title}</strong>
                     <span>{notification.message}</span>
                     <small>
-                      {new Date(notification.createdAt).toLocaleString(
-                        "uk-UA",
-                        {
-                          day: "2-digit",
-                          month: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )}
+                      {new Date(notification.createdAt).toLocaleString("uk-UA", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </small>
                   </span>
                 </button>

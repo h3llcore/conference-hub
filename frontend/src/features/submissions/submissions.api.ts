@@ -78,6 +78,7 @@ export async function updateSubmission(id: string, payload: FormData | any) {
 export async function getCommitteeSubmissions() {
   const res = await fetch(buildUrl("/submissions/committee"), {
     headers: getAuthHeaders(),
+    cache: "no-store",
   });
 
   return parseJsonResponse(res);

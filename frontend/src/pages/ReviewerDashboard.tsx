@@ -77,9 +77,12 @@ export default function ReviewerDashboard() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadAssignments() {
+    async function loadAssignments(showLoader = false) {
       try {
-        setLoading(true);
+        if (showLoader) {
+          setLoading(true);
+        }
+
         setError("");
 
         const data = await getMyReviewerAssignments();
@@ -98,10 +101,15 @@ export default function ReviewerDashboard() {
       }
     }
 
-    loadAssignments();
+    loadAssignments(true);
+
+    const intervalId = window.setInterval(() => {
+      loadAssignments(false);
+    }, 5000);
 
     return () => {
       isMounted = false;
+      window.clearInterval(intervalId);
     };
   }, []);
 
