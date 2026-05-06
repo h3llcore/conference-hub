@@ -1,4 +1,4 @@
-import { Bell } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -29,8 +29,9 @@ export default function NotificationDropdown() {
   async function loadNotifications() {
     try {
       const data = await getMyNotifications();
+      const items: NotificationItem[] = data.notifications || [];
 
-      setNotifications(data.notifications || []);
+      setNotifications(items.filter((item) => !item.isRead));
       setUnreadCount(data.unreadCount || 0);
     } catch (e) {
       console.error(e);
@@ -64,33 +65,29 @@ export default function NotificationDropdown() {
     };
   }, []);
 
-  async function handleToggle() {
-    const nextOpen = !open;
-    setOpen(nextOpen);
+  function handleToggle() {
+    setOpen((prev) => !prev);
+  }
 
-    if (nextOpen && unreadCount > 0) {
-      try {
-        await markAllNotificationsAsRead();
-
-        setUnreadCount(0);
-        setNotifications((prev) =>
-          prev.map((item) => ({
-            ...item,
-            isRead: true,
-          })),
-        );
-      } catch (e) {
-        console.error(e);
-      }
+  async function handleMarkAllAsRead() {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (e) {
+      console.error(e);
     }
   }
 
   async function handleNotificationClick(notification: NotificationItem) {
     try {
-      if (!notification.isRead) {
-        await markNotificationAsRead(notification.id);
-      }
+      await markNotificationAsRead(notification.id);
 
+      setNotifications((prev) =>
+        prev.filter((item) => item.id !== notification.id),
+      );
+
+      setUnreadCount((prev) => Math.max(prev - 1, 0));
       setOpen(false);
 
       if (notification.link) {
@@ -105,7 +102,7 @@ export default function NotificationDropdown() {
     <div className="notification" ref={wrapperRef}>
       <button
         type="button"
-        className="notification__btn"
+        className="notification__button"
         aria-label="Сповіщення"
         onClick={handleToggle}
       >
@@ -118,28 +115,59 @@ export default function NotificationDropdown() {
 
       {open && (
         <div className="notification__dropdown">
-          <div className="notification__header">
-            <strong>Сповіщення</strong>
+          <div className="notification__top">
+            <div>
+              <h3>Сповіщення</h3>
+              <p>
+                {unreadCount > 0
+                  ? `Непрочитаних: ${unreadCount}`
+                  : "Нових сповіщень немає"}
+              </p>
+            </div>
           </div>
 
+          {notifications.length > 0 && (
+            <button
+              type="button"
+              className="notification__read-all"
+              onClick={handleMarkAllAsRead}
+            >
+              <CheckCheck size={16} />
+              <span>Позначити все як прочитане</span>
+            </button>
+          )}
+
           {notifications.length === 0 ? (
-            <p className="notification__empty">Немає сповіщень</p>
+            <div className="notification__empty">
+              <Bell size={22} />
+              <p>Немає нових сповіщень</p>
+            </div>
           ) : (
             <div className="notification__list">
               {notifications.map((notification) => (
                 <button
                   key={notification.id}
                   type="button"
-                  className={`notification__item ${
-                    !notification.isRead ? "notification__item--unread" : ""
-                  }`}
+                  className="notification__item"
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  <strong>{notification.title}</strong>
-                  <span>{notification.message}</span>
-                  <small>
-                    {new Date(notification.createdAt).toLocaleString("uk-UA")}
-                  </small>
+                  <span className="notification__item-dot" />
+
+                  <span className="notification__item-content">
+                    <strong>{notification.title}</strong>
+                    <span>{notification.message}</span>
+                    <small>
+                      {new Date(notification.createdAt).toLocaleString(
+                        "uk-UA",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
+                    </small>
+                  </span>
                 </button>
               ))}
             </div>
