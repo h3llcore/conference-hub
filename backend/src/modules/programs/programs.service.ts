@@ -413,3 +413,88 @@ export async function sendConferenceInvitations(programId: string) {
 
   return invitations;
 }
+
+export async function finishConferenceProgram(programId: string) {
+  const program = await prisma.conferenceProgram.findUnique({
+    where: { id: programId },
+    include: {
+      venue: true,
+    },
+  });
+
+  if (!program) {
+    const error = new Error("Program not found");
+    (error as any).status = 404;
+    throw error;
+  }
+
+  if (program.status === ConferenceProgramStatus.DRAFT) {
+    const error = new Error("Draft program cannot be finished");
+    (error as any).status = 400;
+    throw error;
+  }
+
+  return prisma.conferenceProgram.update({
+    where: { id: programId },
+    data: {
+      status: ConferenceProgramStatus.FINISHED,
+    },
+    include: {
+      venue: true,
+      sections: {
+        include: {
+          items: {
+            include: {
+              submission: {
+                include: {
+                  author: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                      email: true,
+                      institution: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: "asc" },
+          },
+        },
+        orderBy: { order: "asc" },
+      },
+      invitations: {
+        orderBy: { sentAt: "desc" },
+      },
+    },
+  });
+}
+
+export async function archiveConferenceProgram(programId: string) {
+  const program = await prisma.conferenceProgram.findUnique({
+    where: { id: programId },
+  });
+
+  if (!program) {
+    const error = new Error("Program not found");
+    (error as any).status = 404;
+    throw error;
+  }
+
+  return prisma.conferenceProgram.update({
+    where: { id: programId },
+    data: {
+      status: ConferenceProgramStatus.ARCHIVED,
+    },
+    include: {
+      venue: true,
+      sections: {
+        include: {
+          items: true,
+        },
+        orderBy: { order: "asc" },
+      },
+    },
+  });
+}

@@ -14,7 +14,7 @@ const conferenceItems = [
   { label: "Міжнародні конференції", to: "/" },
   { label: "Всеукраїнські конференції", to: "/" },
   { label: "Програми конференцій", to: "/programs" },
-  { label: "Архів конференцій", to: "/" },
+  { label: "Архів конференцій", to: "/programs/archive" },
 ];
 
 const journalItems = [

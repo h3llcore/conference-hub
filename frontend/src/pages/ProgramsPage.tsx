@@ -31,6 +31,7 @@ const emptyForm: ProgramForm = {
 
 function formatDate(date?: string | null) {
   if (!date) return "Не вказано";
+
   return new Date(date).toLocaleString("uk-UA", {
     day: "2-digit",
     month: "2-digit",
@@ -41,7 +42,10 @@ function formatDate(date?: string | null) {
 }
 
 function getStatusLabel(status: string) {
-  return status === "PUBLISHED" ? "Опубліковано" : "Чернетка";
+  if (status === "PUBLISHED") return "Опубліковано";
+  if (status === "FINISHED") return "Завершено";
+  if (status === "ARCHIVED") return "В архіві";
+  return "Чернетка";
 }
 
 export default function ProgramsPage() {
@@ -55,6 +59,18 @@ export default function ProgramsPage() {
   const [error, setError] = useState("");
 
   const isCommittee = user?.role === "COMMITTEE";
+
+  const activePrograms = programs.filter((program) => {
+    if (program.status === "FINISHED" || program.status === "ARCHIVED") {
+      return false;
+    }
+
+    if (program.endDate && new Date(program.endDate) < new Date()) {
+      return false;
+    }
+
+    return true;
+  });
 
   async function loadPrograms() {
     try {
@@ -226,15 +242,19 @@ export default function ProgramsPage() {
 
       {loading ? (
         <div className="programs-empty">Завантаження...</div>
-      ) : programs.length === 0 ? (
-        <div className="programs-empty">Поки що програми конференцій не створено.</div>
+      ) : activePrograms.length === 0 ? (
+        <div className="programs-empty">
+          Активних програм конференцій поки немає.
+        </div>
       ) : (
         <div className="programs-list">
-          {programs.map((program) => (
+          {activePrograms.map((program) => (
             <article key={program.id} className="program-card">
               <div className="program-card__top">
                 <div>
-                  <span className={`program-card__status program-card__status--${program.status.toLowerCase()}`}>
+                  <span
+                    className={`program-card__status program-card__status--${program.status.toLowerCase()}`}
+                  >
                     {getStatusLabel(program.status)}
                   </span>
 

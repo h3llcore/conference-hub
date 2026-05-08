@@ -19,6 +19,7 @@ import CommitteeDashboard from "../pages/CommitteeDashboard";
 import JournalsPage from "../pages/JournalsPage";
 import ProgramsPage from "../pages/ProgramsPage";
 import ProgramDetailsPage from "../pages/ProgramDetailsPage";
+import ProgramsArchivePage from "../pages/ProgramsArchivePage";
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: "unauthorized", element: <UnauthorizedPage /> },
       { path: "journals", element: <JournalsPage /> },
       { path: "programs", element: <ProgramsPage /> },
+      { path: "programs/archive", element: <ProgramsArchivePage /> },
       { path: "programs/:id", element: <ProgramDetailsPage /> },
 
       {

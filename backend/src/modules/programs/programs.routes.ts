@@ -10,6 +10,8 @@ import {
   getConferenceProgramsHandler,
   publishConferenceProgramHandler,
   sendConferenceInvitationsHandler,
+  archiveConferenceProgramHandler,
+  finishConferenceProgramHandler,
 } from "./programs.controller.js";
 
 const router = Router();
@@ -53,6 +55,20 @@ router.post(
   requireAuth,
   requireRole(["COMMITTEE"]),
   sendConferenceInvitationsHandler,
+);
+
+router.patch(
+  "/:id/finish",
+  requireAuth,
+  requireRole(["COMMITTEE"]),
+  finishConferenceProgramHandler,
+);
+
+router.patch(
+  "/:id/archive",
+  requireAuth,
+  requireRole(["COMMITTEE"]),
+  archiveConferenceProgramHandler,
 );
 
 export default router;

@@ -150,3 +150,21 @@ export async function sendConferenceInvitations(
 
   return parseJsonResponse(res);
 }
+
+export async function finishConferenceProgram(programId: string) {
+  const res = await fetch(buildUrl(`/programs/${programId}/finish`), {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+  });
+
+  return parseJsonResponse(res);
+}
+
+export async function archiveConferenceProgram(programId: string) {
+  const res = await fetch(buildUrl(`/programs/${programId}/archive`), {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+  });
+
+  return parseJsonResponse(res);
+}

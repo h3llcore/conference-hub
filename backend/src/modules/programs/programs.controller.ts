@@ -8,6 +8,8 @@ import {
   getConferencePrograms,
   publishConferenceProgram,
   sendConferenceInvitations,
+  archiveConferenceProgram,
+  finishConferenceProgram,
 } from "./programs.service.js";
 
 export async function createConferenceProgramHandler(
@@ -196,6 +198,42 @@ export async function sendConferenceInvitationsHandler(
     const invitations = await sendConferenceInvitations(id);
 
     return res.json({ invitations });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
+  }
+}
+
+export async function finishConferenceProgramHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { id } = req.params;
+
+    const program = await finishConferenceProgram(id);
+
+    return res.json({ program });
+  } catch (e: any) {
+    console.error(e);
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
+  }
+}
+
+export async function archiveConferenceProgramHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { id } = req.params;
+
+    const program = await archiveConferenceProgram(id);
+
+    return res.json({ program });
   } catch (e: any) {
     console.error(e);
     return res.status(e.status || 500).json({

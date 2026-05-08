@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import {
   addProgramItem,
   createProgramSection,
+  finishConferenceProgram,
   getAcceptedConferenceSubmissions,
   getConferenceProgramById,
   publishConferenceProgram,
@@ -56,6 +57,7 @@ const emptyItemForm: ItemForm = {
 
 function formatDateTime(date?: string | null) {
   if (!date) return "";
+
   return new Date(date).toLocaleString("uk-UA", {
     day: "2-digit",
     month: "2-digit",
@@ -67,6 +69,7 @@ function formatDateTime(date?: string | null) {
 
 function formatTime(date?: string | null) {
   if (!date) return "Час не вказано";
+
   return new Date(date).toLocaleTimeString("uk-UA", {
     hour: "2-digit",
     minute: "2-digit",
@@ -112,7 +115,7 @@ export default function ProgramDetailsPage() {
 
   useEffect(() => {
     async function loadAccepted() {
-      if (!program?.venue?.title || !isCommittee) return;
+      if (!isCommittee) return;
 
       try {
         const data = await getAcceptedConferenceSubmissions();
@@ -123,7 +126,7 @@ export default function ProgramDetailsPage() {
     }
 
     loadAccepted();
-  }, [program?.venue?.title, isCommittee]);
+  }, [isCommittee]);
 
   const sortedSections = useMemo(() => {
     return [...(program?.sections || [])].sort((a, b) => a.order - b.order);
@@ -160,6 +163,7 @@ export default function ProgramDetailsPage() {
 
   async function handleCreateSection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     if (!id) return;
 
     if (!sectionForm.title.trim()) {
@@ -169,6 +173,8 @@ export default function ProgramDetailsPage() {
 
     try {
       setSectionLoading(true);
+      setError("");
+
       await createProgramSection(id, {
         title: sectionForm.title.trim(),
         description: sectionForm.description.trim() || undefined,
@@ -196,6 +202,7 @@ export default function ProgramDetailsPage() {
 
     try {
       setItemLoading(true);
+      setError("");
 
       await addProgramItem({
         sectionId: itemForm.sectionId,
@@ -222,6 +229,8 @@ export default function ProgramDetailsPage() {
 
     try {
       setActionLoading(true);
+      setError("");
+
       await publishConferenceProgram(id);
       await loadProgram();
     } catch (e: any) {
@@ -236,10 +245,34 @@ export default function ProgramDetailsPage() {
 
     try {
       setActionLoading(true);
+      setError("");
+
       await sendConferenceInvitations(id);
       await loadProgram();
     } catch (e: any) {
       setError(e.message || "Не вдалося надіслати запрошення.");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleFinish() {
+    if (!id) return;
+
+    const confirmed = window.confirm(
+      "Ви дійсно хочете завершити конференцію? Після цього вона буде показуватись в архіві.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setActionLoading(true);
+      setError("");
+
+      await finishConferenceProgram(id);
+      await loadProgram();
+    } catch (e: any) {
+      setError(e.message || "Не вдалося завершити конференцію.");
     } finally {
       setActionLoading(false);
     }
@@ -257,8 +290,16 @@ export default function ProgramDetailsPage() {
     <section className="program-details">
       <div className="program-details__hero">
         <div>
-          <span className={`program-card__status program-card__status--${program.status.toLowerCase()}`}>
-            {program.status === "PUBLISHED" ? "Опубліковано" : "Чернетка"}
+          <span
+            className={`program-card__status program-card__status--${program.status.toLowerCase()}`}
+          >
+            {program.status === "PUBLISHED"
+              ? "Опубліковано"
+              : program.status === "FINISHED"
+                ? "Завершено"
+                : program.status === "ARCHIVED"
+                  ? "В архіві"
+                  : "Чернетка"}
           </span>
 
           <h1>{program.title}</h1>
@@ -287,17 +328,34 @@ export default function ProgramDetailsPage() {
               </button>
             )}
 
-            <button type="button" onClick={handleSendInvitations} disabled={actionLoading}>
-              <Send size={15} />
-              Надіслати запрошення
-            </button>
+            {program.status === "PUBLISHED" && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSendInvitations}
+                  disabled={actionLoading}
+                >
+                  <Send size={15} />
+                  Надіслати запрошення
+                </button>
+
+                <button
+                  type="button"
+                  className="program-details__finish"
+                  onClick={handleFinish}
+                  disabled={actionLoading}
+                >
+                  Завершити конференцію
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
 
       {error && <div className="programs-alert programs-alert--error">{error}</div>}
 
-      {isCommittee && (
+      {isCommittee && program.status !== "FINISHED" && program.status !== "ARCHIVED" && (
         <div className="program-admin-grid">
           <form className="programs-form" onSubmit={handleCreateSection}>
             <div className="programs-form__title">

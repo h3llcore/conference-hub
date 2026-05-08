@@ -327,6 +327,23 @@
   background: #4338ca;
 }
 
+.program-card__status--finished,
+.program-card__status--archived {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.program-details__finish {
+  background: #111827 !important;
+}
+
+.program-details__finish:hover {
+  background: #030712 !important;
+}
+
 @media (max-width: 800px) {
   .programs-form__grid,
   .program-admin-grid,
@@ -339,4 +356,3 @@
     grid-template-columns: 1fr;
   }
 }
-

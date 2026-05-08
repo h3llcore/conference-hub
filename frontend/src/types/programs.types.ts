@@ -1,4 +1,8 @@
-export type ConferenceProgramStatus = "DRAFT" | "PUBLISHED";
+export type ConferenceProgramStatus =
+  | "DRAFT"
+  | "PUBLISHED"
+  | "FINISHED"
+  | "ARCHIVED";
 
 export type ProgramVenue = {
   id: string;
