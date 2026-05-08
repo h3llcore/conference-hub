@@ -17,6 +17,8 @@ import ReviewerSubmissionDetailsPage from "../pages/ReviewerSubmissionDetailsPag
 import ReviewerReviewFormPage from "../pages/ReviewerReviewFormPage";
 import CommitteeDashboard from "../pages/CommitteeDashboard";
 import JournalsPage from "../pages/JournalsPage";
+import ProgramsPage from "../pages/ProgramsPage";
+import ProgramDetailsPage from "../pages/ProgramDetailsPage";
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +30,8 @@ export const router = createBrowserRouter([
       { path: "register", element: <RegisterPage /> },
       { path: "unauthorized", element: <UnauthorizedPage /> },
       { path: "journals", element: <JournalsPage /> },
+      { path: "programs", element: <ProgramsPage /> },
+      { path: "programs/:id", element: <ProgramDetailsPage /> },
 
       {
         element: <ProtectedRoute roles={["AUTHOR"]} />,

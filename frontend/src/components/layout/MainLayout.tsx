@@ -13,6 +13,7 @@ import "../../styles/header-profile.css";
 const conferenceItems = [
   { label: "Міжнародні конференції", to: "/" },
   { label: "Всеукраїнські конференції", to: "/" },
+  { label: "Програми конференцій", to: "/programs" },
   { label: "Архів конференцій", to: "/" },
 ];
 

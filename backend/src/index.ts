@@ -8,6 +8,7 @@ import submissionsRoutes from "./modules/submissions/submissions.routes.js";
 import assignmentsRoutes from "./modules/assignments/assignments.routes.js";
 import reviewsRoutes from "./modules/reviews/reviews.routes.js";
 import notificationsRoutes from "./modules/notifications/notifications.routes.js";
+import programsRoutes from "./modules/programs/programs.routes.js";
 import path from "path";
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.use("/api/submissions", submissionsRoutes);
 app.use("/api/assignments", assignmentsRoutes);
 app.use("/api/reviews", reviewsRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/programs", programsRoutes);
 
 app.get("/api/health", async (req, res) => {
   try {
