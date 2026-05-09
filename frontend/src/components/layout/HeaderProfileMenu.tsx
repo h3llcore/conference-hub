@@ -1,4 +1,4 @@
-import { LayoutDashboard, LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AuthUser } from "../../types/auth.types";
@@ -34,6 +34,7 @@ export default function HeaderProfileMenu({
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (!profileRef.current) return;
+
       if (!profileRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
       }
@@ -65,6 +66,10 @@ export default function HeaderProfileMenu({
     navigate("/");
   }
 
+  function closeMenu() {
+    setIsProfileOpen(false);
+  }
+
   return (
     <div
       ref={profileRef}
@@ -91,9 +96,19 @@ export default function HeaderProfileMenu({
 
       <div className="layout-header__profile-menu" role="menu">
         <Link
+          to="/profile"
+          className="layout-header__profile-item"
+          onClick={closeMenu}
+          role="menuitem"
+        >
+          <UserRound size={16} />
+          <span>Профіль</span>
+        </Link>
+
+        <Link
           to={getDashboardLink(user.role)}
           className="layout-header__profile-item"
-          onClick={() => setIsProfileOpen(false)}
+          onClick={closeMenu}
           role="menuitem"
         >
           <LayoutDashboard size={16} />
