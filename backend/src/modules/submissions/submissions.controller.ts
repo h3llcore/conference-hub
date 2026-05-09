@@ -9,6 +9,7 @@ import {
   getCommitteeSubmissions,
   getReviewerSubmissionById,
   updateSubmissionStatus,
+  publishSubmission,
 } from "./submissions.service.js";
 
 export async function createSubmissionHandler(req: Request, res: Response) {
@@ -20,11 +21,11 @@ export async function createSubmissionHandler(req: Request, res: Response) {
     }
 
     const file = req.file as Express.Multer.File | undefined;
-    console.log("REQ BODY:", req.body);
-    console.log("REQ FILE:", req.file);
 
     const status =
-      req.body?.status === "DRAFT" ? SubmissionStatus.DRAFT : SubmissionStatus.SUBMITTED;
+      req.body?.status === "DRAFT"
+        ? SubmissionStatus.DRAFT
+        : SubmissionStatus.SUBMITTED;
 
     const submission = await createSubmission(
       userId,
@@ -32,7 +33,7 @@ export async function createSubmissionHandler(req: Request, res: Response) {
         ...req.body,
         fileName: file?.filename || req.body.fileName || null,
       },
-      status
+      status,
     );
 
     return res.status(201).json({ submission });
@@ -140,7 +141,10 @@ export async function getCommitteeSubmissionsHandler(req: Request, res: Response
   }
 }
 
-export async function getReviewerSubmissionByIdHandler(req: Request, res: Response) {
+export async function getReviewerSubmissionByIdHandler(
+  req: Request,
+  res: Response,
+) {
   try {
     const { id } = req.params;
 
@@ -159,7 +163,10 @@ export async function getReviewerSubmissionByIdHandler(req: Request, res: Respon
   }
 }
 
-export async function updateSubmissionStatusHandler(req: Request, res: Response) {
+export async function updateSubmissionStatusHandler(
+  req: Request,
+  res: Response,
+) {
   try {
     const { id } = req.params;
     const { status } = req.body as {
@@ -198,6 +205,22 @@ export async function updateSubmissionStatusHandler(req: Request, res: Response)
     return res.json({ submission });
   } catch (e: any) {
     console.error(e);
+    return res.status(e.status || 500).json({
+      message: e.message || "Server error",
+    });
+  }
+}
+
+export async function publishSubmissionHandler(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const submission = await publishSubmission(id);
+
+    return res.json({ submission });
+  } catch (e: any) {
+    console.error(e);
+
     return res.status(e.status || 500).json({
       message: e.message || "Server error",
     });

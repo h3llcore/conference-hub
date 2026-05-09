@@ -356,3 +356,52 @@ export async function updateSubmissionStatus(
 
   return submission;
 }
+
+export async function publishSubmission(submissionId: string) {
+  const submission = await prisma.submission.findUnique({
+    where: { id: submissionId },
+    include: { author: true },
+  });
+
+  if (!submission) {
+    const error = new Error("Submission not found");
+    (error as any).status = 404;
+    throw error;
+  }
+
+  if (submission.status !== SubmissionStatus.ACCEPTED) {
+    const error = new Error("Only accepted submissions can be published");
+    (error as any).status = 400;
+    throw error;
+  }
+
+  const updated = await prisma.submission.update({
+    where: { id: submissionId },
+    data: {
+      status: SubmissionStatus.PUBLISHED,
+      finalDecisionAt: new Date(),
+    },
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          institution: true,
+          country: true,
+        },
+      },
+    },
+  });
+
+  await createNotification({
+    userId: submission.authorId,
+    title: "Статтю опубліковано",
+    message: `Вашу статтю "${submission.title}" опубліковано на платформі.`,
+    type: NotificationType.SUBMISSION_STATUS_CHANGED,
+    link: `/author/submission/${submission.id}`,
+  });
+
+  return updated;
+}

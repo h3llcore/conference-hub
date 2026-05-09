@@ -87,6 +87,7 @@ export async function getCommitteeSubmissions() {
 export async function getReviewerSubmissions() {
   const res = await fetch(buildUrl("/submissions/reviewer"), {
     headers: getAuthHeaders(),
+    cache: "no-store",
   });
 
   return parseJsonResponse(res);
@@ -102,18 +103,36 @@ export async function getReviewerSubmissionById(id: string) {
 
 export async function updateReviewerSubmissionStatus(
   id: string,
-  status:
-    | "UNDER_REVIEW"
-    | "ACCEPTED"
-    | "REJECTED"
-    | "REVISION_REQUIRED"
-    | "RESUBMITTED"
-    | "PUBLISHED",
+  status: string,
 ) {
   const res = await fetch(buildUrl(`/submissions/${id}/status`), {
     method: "PATCH",
     headers: getAuthHeaders(true),
     body: JSON.stringify({ status }),
+  });
+
+  return parseJsonResponse(res);
+}
+
+export async function downloadSubmissionFile(fileName: string) {
+  const res = await fetch(
+    buildUrl(`/submissions/file/${encodeURIComponent(fileName)}/download`),
+    {
+      headers: getAuthHeaders(),
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error("Не вдалося завантажити файл");
+  }
+
+  return res.blob();
+}
+
+export async function publishSubmission(id: string) {
+  const res = await fetch(buildUrl(`/submissions/${id}/publish`), {
+    method: "PATCH",
+    headers: getAuthHeaders(),
   });
 
   return parseJsonResponse(res);

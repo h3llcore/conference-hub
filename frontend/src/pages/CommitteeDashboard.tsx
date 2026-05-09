@@ -1,7 +1,8 @@
-import { CheckCircle2, Eye, FileText, RotateCcw, Search, Users, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, FileText, Megaphone, RotateCcw, Search, Users, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   getCommitteeSubmissions,
+  publishSubmission,
   updateReviewerSubmissionStatus,
 } from "../features/submissions/submissions.api";
 import {
@@ -377,6 +378,30 @@ export default function CommitteeDashboard() {
     }
   }
 
+  async function handlePublishSubmission(submissionId: string) {
+    const confirmed = window.confirm(
+      "Опублікувати цю статтю? Після цього вона з’явиться на головній сторінці."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setActionLoadingId(submissionId);
+      setError("");
+
+      const data = await publishSubmission(submissionId);
+      const updated = data.submission;
+
+      setSubmissions((prev) => prev.map((item) => (item.id === submissionId ? updated : item)));
+
+      setSelectedSubmission((prev) => (prev && prev.id === submissionId ? updated : prev));
+    } catch (e: any) {
+      setError(e.message || "Не вдалося опублікувати статтю.");
+    } finally {
+      setActionLoadingId("");
+    }
+  }
+
   const filteredSubmissions = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -512,6 +537,18 @@ export default function CommitteeDashboard() {
                         <CheckCircle2 size={16} />
                         <span>Прийняти</span>
                       </button>
+
+                      {item.status === "ACCEPTED" && (
+                        <button
+                          type="button"
+                          className="committee-dashboard__action committee-dashboard__action--publish"
+                          disabled={actionLoadingId === item.id}
+                          onClick={() => handlePublishSubmission(item.id)}
+                        >
+                          <Megaphone size={16} />
+                          <span>Опублікувати</span>
+                        </button>
+                      )}
 
                       <button
                         type="button"

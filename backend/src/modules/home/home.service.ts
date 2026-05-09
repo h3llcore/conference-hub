@@ -15,14 +15,47 @@ type CreateHomeContentDto = {
 };
 
 export async function getPublishedHomeContent() {
-  const items = await prisma.homeContent.findMany({
-    where: { isPublished: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const [items, publishedSubmissions] = await Promise.all([
+    prisma.homeContent.findMany({
+      where: { isPublished: true },
+      orderBy: { createdAt: "desc" },
+    }),
+
+    prisma.submission.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { finalDecisionAt: "desc" },
+      take: 5,
+      include: {
+        author: {
+          select: {
+            firstName: true,
+            lastName: true,
+            institution: true,
+          },
+        },
+      },
+    }),
+  ]);
 
   return {
     journals: items.filter((item) => item.type === "JOURNAL"),
-    articles: items.filter((item) => item.type === "ARTICLE"),
+
+    articles: publishedSubmissions.map((item) => ({
+      id: item.id,
+      type: "ARTICLE",
+      title: item.title,
+      description: item.abstract,
+      authorName: item.author
+        ? `${item.author.firstName} ${item.author.lastName}`
+        : "Анонім",
+      linkUrl: `/author/submission/${item.id}`,
+      imageUrl: null,
+      rating: null,
+      date: item.finalDecisionAt || item.createdAt,
+      isPublished: true,
+      createdAt: item.createdAt,
+    })),
+
     news: items.filter((item) => item.type === "NEWS"),
   };
 }

@@ -301,32 +301,6 @@
   border-color: #fecaca;
 }
 
-@media (max-width: 1100px) {
-  .committee-dashboard__layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .committee-dashboard {
-    padding: 20px 12px 32px;
-  }
-
-  .committee-dashboard__hero {
-    padding: 28px 18px;
-    border-radius: 24px;
-  }
-
-  .committee-dashboard__title {
-    font-size: 28px;
-  }
-
-  .committee-dashboard__card-top {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
 .committee-dashboard__reviewer-item--disabled {
   opacity: 0.6;
 }
@@ -355,4 +329,39 @@
   border: 1px solid #fdba74;
   font-size: 13px;
   font-weight: 600;
+}
+
+.committee-dashboard__action--publish {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.committee-dashboard__action--publish:hover {
+  background: #4338ca;
+}
+
+@media (max-width: 1100px) {
+  .committee-dashboard__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .committee-dashboard {
+    padding: 20px 12px 32px;
+  }
+
+  .committee-dashboard__hero {
+    padding: 28px 18px;
+    border-radius: 24px;
+  }
+
+  .committee-dashboard__title {
+    font-size: 28px;
+  }
+
+  .committee-dashboard__card-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

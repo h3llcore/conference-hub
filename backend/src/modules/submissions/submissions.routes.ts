@@ -9,6 +9,7 @@ import {
   getCommitteeSubmissionsHandler,
   getReviewerSubmissionByIdHandler,
   updateSubmissionStatusHandler,
+  publishSubmissionHandler,
 } from "./submissions.controller.js";
 import { requireAuth } from "../../middlewares/auth.js";
 import { requireRole } from "../../middlewares/requireRole.js";
@@ -65,6 +66,13 @@ router.patch(
   requireAuth,
   requireRole(["REVIEWER", "COMMITTEE"]),
   updateSubmissionStatusHandler,
+);
+
+router.patch(
+  "/:id/publish",
+  requireAuth,
+  requireRole(["COMMITTEE"]),
+  publishSubmissionHandler,
 );
 
 router.get("/:id", requireAuth, getSubmissionByIdHandler);
