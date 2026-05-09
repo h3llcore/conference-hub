@@ -1,4 +1,4 @@
-import { LayoutDashboard, LogOut, UserRound } from "lucide-react";
+import { Home, LayoutDashboard, LogOut, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AuthUser } from "../../types/auth.types";
@@ -114,6 +114,18 @@ export default function HeaderProfileMenu({
           <LayoutDashboard size={16} />
           <span>Мій кабінет</span>
         </Link>
+
+        {user.role === "COMMITTEE" && (
+          <Link
+            to="/committee/content"
+            className="layout-header__profile-item"
+            onClick={closeMenu}
+            role="menuitem"
+          >
+            <Home size={16} />
+            <span>Панель керування</span>
+          </Link>
+        )}
 
         <button
           type="button"

@@ -12,7 +12,7 @@ function signToken(user: { id: string; email: string; role: Role }) {
       role: user.role,
     },
     process.env.JWT_SECRET || "dev_secret",
-    { expiresIn: "7d" },
+    { expiresIn: "7d" }
   );
 }
 
@@ -38,10 +38,7 @@ function getUserSelect() {
 function normalizeOrcid(value?: string | null) {
   if (!value) return null;
 
-  return value
-    .trim()
-    .replace("https://orcid.org/", "")
-    .replace("http://orcid.org/", "");
+  return value.trim().replace("https://orcid.org/", "").replace("http://orcid.org/", "");
 }
 
 function isValidOrcid(value: string) {
@@ -162,16 +159,14 @@ export async function register(req: Request, res: Response) {
       bio?: string;
     };
 
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      !password ||
-      !institution ||
-      !country ||
-      !role
-    ) {
+    if (!firstName || !lastName || !email || !password || !institution || !country || !role) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (role !== Role.AUTHOR && role !== Role.REVIEWER) {
+      return res.status(403).json({
+        message: "Only authors and reviewers can register manually",
+      });
     }
 
     const normalizedOrcid = normalizeOrcid(orcid);
@@ -476,9 +471,7 @@ export async function orcidCallback(req: Request, res: Response) {
 
     const token = signToken(user);
 
-    return res.redirect(
-      `${frontendUrl}/orcid/callback?token=${encodeURIComponent(token)}`,
-    );
+    return res.redirect(`${frontendUrl}/orcid/callback?token=${encodeURIComponent(token)}`);
   } catch (e) {
     console.error(e);
     return res.redirect(`${frontendUrl}/orcid/callback?error=orcid_failed`);

@@ -42,9 +42,7 @@ export default function RegisterPage() {
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const confirmPasswordInputRef = useRef<HTMLInputElement | null>(null);
 
-  function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) {
+  function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target;
 
     setForm((prev) => ({
@@ -62,10 +60,7 @@ export default function RegisterPage() {
     requestAnimationFrame(() => {
       if (passwordInputRef.current) {
         passwordInputRef.current.focus();
-        passwordInputRef.current.setSelectionRange(
-          cursorPosition,
-          cursorPosition,
-        );
+        passwordInputRef.current.setSelectionRange(cursorPosition, cursorPosition);
       }
     });
   }
@@ -79,10 +74,7 @@ export default function RegisterPage() {
     requestAnimationFrame(() => {
       if (confirmPasswordInputRef.current) {
         confirmPasswordInputRef.current.focus();
-        confirmPasswordInputRef.current.setSelectionRange(
-          cursorPosition,
-          cursorPosition,
-        );
+        confirmPasswordInputRef.current.setSelectionRange(cursorPosition, cursorPosition);
       }
     });
   }
@@ -135,9 +127,7 @@ export default function RegisterPage() {
       <div className="auth-card">
         <div className="auth-card__header">
           <h1 className="auth-card__title">Реєстрація</h1>
-          <p className="auth-card__subtitle">
-            Створіть обліковий запис для роботи з платформою
-          </p>
+          <p className="auth-card__subtitle">Створіть обліковий запис для роботи з платформою</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -202,9 +192,7 @@ export default function RegisterPage() {
                   className="auth-form__toggle-password"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={togglePasswordVisibility}
-                  aria-label={
-                    showPassword ? "Приховати пароль" : "Показати пароль"
-                  }
+                  aria-label={showPassword ? "Приховати пароль" : "Показати пароль"}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -230,15 +218,9 @@ export default function RegisterPage() {
                   className="auth-form__toggle-password"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={toggleConfirmPasswordVisibility}
-                  aria-label={
-                    showConfirmPassword ? "Приховати пароль" : "Показати пароль"
-                  }
+                  aria-label={showConfirmPassword ? "Приховати пароль" : "Показати пароль"}
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
@@ -295,25 +277,10 @@ export default function RegisterPage() {
                 />
                 <span>Рецензент</span>
               </label>
-
-              <label className="auth-form__radio">
-                <input
-                  type="radio"
-                  name="role"
-                  value="COMMITTEE"
-                  checked={form.role === "COMMITTEE"}
-                  onChange={handleChange}
-                />
-                <span>Комітет</span>
-              </label>
             </div>
           </div>
 
-          <button
-            className="auth-form__submit"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="auth-form__submit" type="submit" disabled={loading}>
             {loading ? "Реєстрація..." : "Зареєструватися"}
           </button>
 

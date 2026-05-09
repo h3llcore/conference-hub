@@ -1,5 +1,5 @@
 import { Flag, LogIn, Upload, User } from "lucide-react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import HeaderDropdown from "./HeaderDropdown";
 import HeaderProfileMenu from "./HeaderProfileMenu";
 import { useAuth } from "../../features/auth/AuthContext";
@@ -36,33 +36,8 @@ const contactItems = [
 ];
 
 export default function MainLayout() {
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { language, toggleLanguage } = useLanguage();
-
-  function handleUploadClick() {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-
-    if (user.role === "AUTHOR") {
-      navigate("/author/submit");
-      return;
-    }
-
-    if (user.role === "REVIEWER") {
-      navigate("/reviewer");
-      return;
-    }
-
-    if (user.role === "COMMITTEE") {
-      navigate("/committee");
-      return;
-    }
-
-    navigate("/");
-  }
 
   return (
     <div className="layout">
@@ -85,11 +60,7 @@ export default function MainLayout() {
           <nav className="layout-header__menu">
             <HeaderDropdown title="Конференції" items={conferenceItems} />
             <HeaderDropdown title="Наукові журнали" items={journalItems} />
-
-            <HeaderDropdown
-              title="Подання матеріалів"
-              items={submissionItems}
-            />
+            <HeaderDropdown title="Подання матеріалів" items={submissionItems} />
 
             <Link
               to="/"
@@ -137,14 +108,12 @@ export default function MainLayout() {
               </div>
             )}
 
-            <button
-              type="button"
-              className="layout-header__upload"
-              onClick={handleUploadClick}
-            >
-              <Upload size={16} />
-              <span>Завантажити роботу</span>
-            </button>
+            {user?.role === "AUTHOR" && (
+              <Link to="/author/submit" className="layout-header__upload">
+                <Upload size={16} />
+                <span>Завантажити роботу</span>
+              </Link>
+            )}
           </div>
         </div>
       </header>

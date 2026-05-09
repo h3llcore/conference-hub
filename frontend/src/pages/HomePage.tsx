@@ -2,6 +2,10 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { getVenues } from "../features/venues/venues.api";
+import {
+  apiGetHomeContent,
+  type HomeContent,
+} from "../features/home/home.api";
 import "../styles/home.css";
 
 type Venue = {
@@ -12,42 +16,23 @@ type Venue = {
   deadline?: string;
 };
 
-const popularArticles = [
-  {
-    id: "1",
-    author: "Ірина Коваль",
-    title: "Моделі штучного інтелекту в освітньому середовищі",
-    text: "Огляд сучасних підходів до використання ШІ в навчальному процесі та його впливу на цифрову трансформацію освіти.",
-  },
-  {
-    id: "2",
-    author: "Олександр Петренко",
-    title: "Хмарні обчислення для дослідницьких платформ",
-    text: "Практичні аспекти побудови масштабованих вебресурсів для підтримки конференцій, журналів і спільної роботи дослідників.",
-  },
-];
+function formatDate(date?: string | null) {
+  if (!date) return "";
 
-const newsItems = [
-  {
-    id: "1",
-    text: "Оновлено каталог наукових журналів для подання матеріалів.",
-    date: "18.04.2026",
-  },
-  {
-    id: "2",
-    text: "Додано нові можливості для керування поданнями авторів.",
-    date: "17.04.2026",
-  },
-  {
-    id: "3",
-    text: "Розширено перелік конференцій для участі у 2026 році.",
-    date: "15.04.2026",
-  },
-];
+  return new Date(date).toLocaleDateString("uk-UA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
 
 export default function HomePage() {
   const [latestJournals, setLatestJournals] = useState<Venue[]>([]);
+  const [popularArticles, setPopularArticles] = useState<HomeContent[]>([]);
+  const [newsItems, setNewsItems] = useState<HomeContent[]>([]);
+
   const [loadingJournals, setLoadingJournals] = useState(true);
+  const [loadingHomeContent, setLoadingHomeContent] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +52,7 @@ export default function HomePage() {
         }
       } catch (e) {
         console.error(e);
+
         if (isMounted) {
           setLatestJournals([]);
         }
@@ -77,7 +63,32 @@ export default function HomePage() {
       }
     }
 
+    async function loadHomeContent() {
+      try {
+        setLoadingHomeContent(true);
+
+        const data = await apiGetHomeContent();
+
+        if (isMounted) {
+          setPopularArticles(data.articles || []);
+          setNewsItems(data.news || []);
+        }
+      } catch (e) {
+        console.error(e);
+
+        if (isMounted) {
+          setPopularArticles([]);
+          setNewsItems([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingHomeContent(false);
+        }
+      }
+    }
+
     loadLatestJournals();
+    loadHomeContent();
 
     return () => {
       isMounted = false;
@@ -95,16 +106,22 @@ export default function HomePage() {
           </h1>
 
           <p className="home-hero__description">
-            Зручний простір для пошуку журналів, перегляду актуальних статей, відстеження новин та
-            організації подання наукових матеріалів.
+            Зручний простір для пошуку журналів, перегляду актуальних статей,
+            відстеження новин та організації подання наукових матеріалів.
           </p>
 
           <div className="home-hero__actions">
-            <Link to="/journals" className="home-hero__button home-hero__button--primary">
+            <Link
+              to="/journals"
+              className="home-hero__button home-hero__button--primary"
+            >
               Почати пошук
             </Link>
 
-            <Link to="/register" className="home-hero__button home-hero__button--secondary">
+            <Link
+              to="/register"
+              className="home-hero__button home-hero__button--secondary"
+            >
               Створити акаунт
             </Link>
           </div>
@@ -123,7 +140,9 @@ export default function HomePage() {
           </div>
 
           <div className="home-search__field">
-            <label htmlFor="article-search">Пошук за назвою або ключовими словами</label>
+            <label htmlFor="article-search">
+              Пошук за назвою або ключовими словами
+            </label>
             <input
               id="article-search"
               type="text"
@@ -183,20 +202,41 @@ export default function HomePage() {
             </div>
 
             <div className="home-articles">
-              {popularArticles.map((article) => (
-                <article key={article.id} className="home-article-card">
-                  <div className="home-article-card__meta">
-                    <p className="home-article-card__author">{article.author}</p>
-                  </div>
+              {loadingHomeContent && <div>Завантаження статей...</div>}
 
-                  <h3>{article.title}</h3>
-                  <p className="home-article-card__excerpt">{article.text}</p>
+              {!loadingHomeContent && popularArticles.length === 0 && (
+                <div>Популярних статей поки немає.</div>
+              )}
 
-                  <button type="button" className="home-article-card__button">
-                    Читати детальніше
-                  </button>
-                </article>
-              ))}
+              {!loadingHomeContent &&
+                popularArticles.map((article) => (
+                  <article key={article.id} className="home-article-card">
+                    <div className="home-article-card__meta">
+                      <p className="home-article-card__author">
+                        {article.authorName || "Анонім"}
+                      </p>
+                    </div>
+
+                    <h3>{article.title}</h3>
+
+                    <p className="home-article-card__excerpt">
+                      {article.description}
+                    </p>
+
+                    {article.linkUrl ? (
+                      <Link
+                        to={article.linkUrl}
+                        className="home-article-card__button"
+                      >
+                        Читати детальніше
+                      </Link>
+                    ) : (
+                      <button type="button" className="home-article-card__button">
+                        Читати детальніше
+                      </button>
+                    )}
+                  </article>
+                ))}
             </div>
           </div>
         </main>
@@ -208,18 +248,27 @@ export default function HomePage() {
             </div>
 
             <div className="home-news-list">
-              {newsItems.map((item) => (
-                <article key={item.id} className="home-news-card">
-                  <p>{item.text}</p>
-                  <span>{item.date}</span>
-                </article>
-              ))}
+              {loadingHomeContent && <div>Завантаження новин...</div>}
+
+              {!loadingHomeContent && newsItems.length === 0 && (
+                <div>Новин поки немає.</div>
+              )}
+
+              {!loadingHomeContent &&
+                newsItems.map((item) => (
+                  <article key={item.id} className="home-news-card">
+                    <p>{item.description}</p>
+                    <span>{formatDate(item.date)}</span>
+                  </article>
+                ))}
             </div>
           </div>
         </aside>
       </div>
 
-      <footer className="home-footer">© 2026 Conference Hub. Усі права захищено.</footer>
+      <footer className="home-footer">
+        © 2026 Conference Hub. Усі права захищено.
+      </footer>
     </section>
   );
 }

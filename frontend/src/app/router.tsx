@@ -16,6 +16,7 @@ import ReviewerDashboard from "../pages/ReviewerDashboard";
 import ReviewerSubmissionDetailsPage from "../pages/ReviewerSubmissionDetailsPage";
 import ReviewerReviewFormPage from "../pages/ReviewerReviewFormPage";
 import CommitteeDashboard from "../pages/CommitteeDashboard";
+import CommitteeContentPage from "../pages/CommitteeContentPage";
 import JournalsPage from "../pages/JournalsPage";
 import ProgramsPage from "../pages/ProgramsPage";
 import ProgramDetailsPage from "../pages/ProgramDetailsPage";
@@ -29,14 +30,17 @@ export const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { index: true, element: <HomePage /> },
+
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
       { path: "unauthorized", element: <UnauthorizedPage /> },
+      { path: "orcid/callback", element: <OrcidCallbackPage /> },
+
       { path: "journals", element: <JournalsPage /> },
+
       { path: "programs", element: <ProgramsPage /> },
       { path: "programs/archive", element: <ProgramsArchivePage /> },
       { path: "programs/:id", element: <ProgramDetailsPage /> },
-      { path: "orcid/callback", element: <OrcidCallbackPage /> },
 
       {
         element: <ProtectedRoute />,
@@ -74,7 +78,10 @@ export const router = createBrowserRouter([
 
       {
         element: <ProtectedRoute roles={["COMMITTEE"]} />,
-        children: [{ path: "committee", element: <CommitteeDashboard /> }],
+        children: [
+          { path: "committee", element: <CommitteeDashboard /> },
+          { path: "committee/content", element: <CommitteeContentPage /> },
+        ],
       },
 
       { path: "*", element: <NotFoundPage /> },
