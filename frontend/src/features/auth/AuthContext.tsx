@@ -1,7 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { AuthUser, LoginPayload, RegisterPayload, } from "../../types/auth.types";
+import type {
+  AuthUser,
+  LoginPayload,
+  ProfilePayload,
+  RegisterPayload,
+} from "../../types/auth.types";
 import { storage } from "../../utils/storage";
-import { apiLogin, apiMe, apiRegister } from "./auth.api";
+import {
+  apiGetOrcidConnectUrl,
+  apiGetOrcidLoginUrl,
+  apiLogin,
+  apiMe,
+  apiRegister,
+  apiUpdateProfile,
+} from "./auth.api";
 
 type AuthState = {
   user: AuthUser | null;
@@ -9,6 +21,9 @@ type AuthState = {
   isAuthLoading: boolean;
   login: (payload: LoginPayload) => Promise<AuthUser>;
   register: (payload: RegisterPayload) => Promise<AuthUser>;
+  updateProfile: (payload: ProfilePayload) => Promise<AuthUser>;
+  connectOrcid: () => Promise<void>;
+  loginWithOrcid: () => Promise<void>;
   logout: () => void;
 };
 
@@ -40,11 +55,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
   }, [token]);
 
-    async function login(payload: LoginPayload): Promise<AuthUser> {
+  async function login(payload: LoginPayload): Promise<AuthUser> {
     const { token: newToken, user } = await apiLogin(payload);
+
     storage.setToken(newToken);
     setToken(newToken);
     setUser(user);
+
     return user;
   }
 
@@ -58,6 +75,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       institution,
       country,
       role,
+      academicDegree,
+      academicTitle,
+      orcid,
+      googleScholarUrl,
+      bio,
     } = payload;
 
     await apiRegister({
@@ -68,9 +90,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       institution,
       country,
       role,
+      academicDegree,
+      academicTitle,
+      orcid,
+      googleScholarUrl,
+      bio,
     });
 
     return login({ email, password });
+  }
+
+  async function updateProfile(payload: ProfilePayload): Promise<AuthUser> {
+    const { user } = await apiUpdateProfile(payload);
+    setUser(user);
+    return user;
+  }
+
+  async function connectOrcid() {
+    const { url } = await apiGetOrcidConnectUrl();
+    window.location.href = url;
+  }
+
+  async function loginWithOrcid() {
+    const { url } = await apiGetOrcidLoginUrl();
+    window.location.href = url;
   }
 
   function logout() {
@@ -81,7 +124,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ user, token, isAuthLoading, login, register, logout }),
+    () => ({
+      user,
+      token,
+      isAuthLoading,
+      login,
+      register,
+      updateProfile,
+      connectOrcid,
+      loginWithOrcid,
+      logout,
+    }),
     [user, token, isAuthLoading],
   );
 
@@ -90,6 +143,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+
+  if (!ctx) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
+
   return ctx;
 }

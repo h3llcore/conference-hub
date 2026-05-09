@@ -13,7 +13,24 @@ export type RegisterPayload = {
   confirmPassword: string;
   institution: string;
   country: string;
+  academicDegree?: string;
+  academicTitle?: string;
+  orcid?: string;
+  googleScholarUrl?: string;
+  bio?: string;
   role: UserRole;
+};
+
+export type ProfilePayload = {
+  firstName: string;
+  lastName: string;
+  institution: string;
+  country: string;
+  academicDegree?: string;
+  academicTitle?: string;
+  orcid?: string;
+  googleScholarUrl?: string;
+  bio?: string;
 };
 
 export type AuthUser = {
@@ -24,9 +41,16 @@ export type AuthUser = {
   role: UserRole;
   institution?: string;
   country?: string;
+  academicDegree?: string | null;
+  academicTitle?: string | null;
+  orcid?: string | null;
+  orcidVerified?: boolean;
+  googleScholarUrl?: string | null;
+  bio?: string | null;
 };
 
 export type AuthResponse = {
+  token?: string;
   accessToken?: string;
   user?: AuthUser;
   message?: string;

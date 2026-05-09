@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../features/auth/AuthContext";
 import type { LoginPayload, UserRole } from "../types/auth.types";
@@ -13,9 +13,22 @@ function routeByRole(role: UserRole) {
   return "/";
 }
 
+function getOrcidErrorMessage(error: string | null) {
+  if (error === "user_not_found") {
+    return "ORCID підтверджено, але користувача з таким ORCID у системі не знайдено. Спочатку увійдіть через email і підключіть ORCID у профілі.";
+  }
+
+  if (error) {
+    return "Не вдалося виконати вхід через ORCID.";
+  }
+
+  return "";
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const [params] = useSearchParams();
+  const { login, loginWithOrcid } = useAuth();
 
   const [form, setForm] = useState<LoginPayload>({
     email: "",
@@ -23,8 +36,9 @@ export default function LoginPage() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(getOrcidErrorMessage(params.get("orcidError")));
   const [loading, setLoading] = useState(false);
+  const [orcidLoading, setOrcidLoading] = useState(false);
 
   function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target;
@@ -57,6 +71,17 @@ export default function LoginPage() {
       setError(e.message || "Помилка входу");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleOrcidLogin() {
+    try {
+      setOrcidLoading(true);
+      setError("");
+      await loginWithOrcid();
+    } catch (e: any) {
+      setError(e.message || "Не вдалося перейти до ORCID.");
+      setOrcidLoading(false);
     }
   }
 
@@ -118,6 +143,20 @@ export default function LoginPage() {
             disabled={loading}
           >
             {loading ? "Вхід..." : "Увійти"}
+          </button>
+
+          <div className="auth-form__divider">
+            <span>або</span>
+          </div>
+
+          <button
+            className="auth-form__orcid"
+            type="button"
+            onClick={handleOrcidLogin}
+            disabled={orcidLoading}
+          >
+            <ShieldCheck size={17} />
+            {orcidLoading ? "Переадресація..." : "Увійти через ORCID"}
           </button>
 
           <p className="auth-form__footer">
