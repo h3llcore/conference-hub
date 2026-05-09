@@ -23,6 +23,8 @@ import ProgramDetailsPage from "../pages/ProgramDetailsPage";
 import ProgramsArchivePage from "../pages/ProgramsArchivePage";
 import ProfilePage from "../pages/ProfilePage";
 import OrcidCallbackPage from "../pages/OrcidCallbackPage";
+import ArticleDetailsPage from "../pages/ArticleDetailsPage";
+import HomeContentDetailsPage from "../pages/HomeContentDetailsPage";
 
 export const router = createBrowserRouter([
   {
@@ -37,6 +39,9 @@ export const router = createBrowserRouter([
       { path: "orcid/callback", element: <OrcidCallbackPage /> },
 
       { path: "journals", element: <JournalsPage /> },
+
+      { path: "articles/:id", element: <ArticleDetailsPage /> },
+      { path: "home-content/:id", element: <HomeContentDetailsPage /> },
 
       { path: "programs", element: <ProgramsPage /> },
       { path: "programs/archive", element: <ProgramsArchivePage /> },

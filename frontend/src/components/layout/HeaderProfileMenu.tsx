@@ -22,10 +22,7 @@ function getRoleLabel(role?: string) {
   return "Користувач";
 }
 
-export default function HeaderProfileMenu({
-  user,
-  logout,
-}: HeaderProfileMenuProps) {
+export default function HeaderProfileMenu({ user, logout }: HeaderProfileMenuProps) {
   const navigate = useNavigate();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -63,18 +60,15 @@ export default function HeaderProfileMenu({
   function handleLogout() {
     logout();
     setIsProfileOpen(false);
-    navigate("/");
+    navigate("/login", { replace: true });
   }
-
+  
   function closeMenu() {
     setIsProfileOpen(false);
   }
 
   return (
-    <div
-      ref={profileRef}
-      className={`layout-header__profile ${isProfileOpen ? "is-open" : ""}`}
-    >
+    <div ref={profileRef} className={`layout-header__profile ${isProfileOpen ? "is-open" : ""}`}>
       <button
         type="button"
         className="layout-header__profile-trigger"
@@ -82,15 +76,11 @@ export default function HeaderProfileMenu({
         aria-expanded={isProfileOpen}
         aria-haspopup="menu"
       >
-        <div className="layout-header__profile-avatar">
-          {profileTitle.charAt(0).toUpperCase()}
-        </div>
+        <div className="layout-header__profile-avatar">{profileTitle.charAt(0).toUpperCase()}</div>
 
         <div className="layout-header__profile-info">
           <span className="layout-header__profile-name">{profileTitle}</span>
-          <span className="layout-header__profile-role">
-            {getRoleLabel(user.role)}
-          </span>
+          <span className="layout-header__profile-role">{getRoleLabel(user.role)}</span>
         </div>
       </button>
 

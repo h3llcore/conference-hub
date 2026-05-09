@@ -4,6 +4,8 @@ import {
   createHomeContent,
   deleteHomeContent,
   getAllHomeContent,
+  getHomeContentById,
+  getPublishedArticleById,
   getPublishedHomeContent,
   updateHomeContent,
 } from "./home.service.js";
@@ -15,6 +17,43 @@ export async function getPublishedHomeContentHandler(
   try {
     const data = await getPublishedHomeContent();
     return res.json(data);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getHomeContentByIdHandler(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const item = await getHomeContentById(id);
+
+    if (!item) {
+      return res.status(404).json({ message: "Content not found" });
+    }
+
+    return res.json({ item });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getPublishedArticleByIdHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { id } = req.params;
+
+    const article = await getPublishedArticleById(id);
+
+    if (!article) {
+      return res.status(404).json({ message: "Article not found" });
+    }
+
+    return res.json({ article });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Server error" });
@@ -49,6 +88,12 @@ export async function createHomeContentHandler(req: Request, res: Response) {
 
     if (!Object.values(HomeContentType).includes(type)) {
       return res.status(400).json({ message: "Invalid content type" });
+    }
+
+    if (type === HomeContentType.ARTICLE) {
+      return res.status(400).json({
+        message: "Articles are published from accepted submissions only",
+      });
     }
 
     if (!title || !description) {

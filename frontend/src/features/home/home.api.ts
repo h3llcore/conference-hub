@@ -1,9 +1,6 @@
 import { http } from "../../api/http";
 
-export type HomeContentType =
-  | "JOURNAL"
-  | "ARTICLE"
-  | "NEWS";
+export type HomeContentType = "JOURNAL" | "ARTICLE" | "NEWS";
 
 export type HomeContent = {
   id: string;
@@ -31,6 +28,35 @@ export type CreateHomeContentPayload = {
   isPublished?: boolean;
 };
 
+export type PublishedArticle = {
+  id: string;
+  title: string;
+  abstract: string;
+  keywords: string;
+  venueType: "JOURNAL" | "CONFERENCE";
+  venue: string;
+  coAuthors?: string | null;
+  notes?: string | null;
+  fileName?: string | null;
+  status: string;
+  version: number;
+  currentRound: number;
+  createdAt: string;
+  finalDecisionAt?: string | null;
+  author?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    institution: string;
+    country: string;
+    academicDegree?: string | null;
+    academicTitle?: string | null;
+    orcid?: string | null;
+    orcidVerified?: boolean;
+    googleScholarUrl?: string | null;
+  };
+};
+
 export async function apiGetHomeContent() {
   return http<{
     journals: HomeContent[];
@@ -39,13 +65,19 @@ export async function apiGetHomeContent() {
   }>("/api/home");
 }
 
+export async function apiGetHomeContentById(id: string) {
+  return http<{ item: HomeContent }>(`/api/home/content/${id}`);
+}
+
+export async function apiGetPublishedArticleById(id: string) {
+  return http<{ article: PublishedArticle }>(`/api/home/articles/${id}`);
+}
+
 export async function apiGetAdminHomeContent() {
   return http<{ items: HomeContent[] }>("/api/home/admin");
 }
 
-export async function apiCreateHomeContent(
-  payload: CreateHomeContentPayload,
-) {
+export async function apiCreateHomeContent(payload: CreateHomeContentPayload) {
   return http<{ item: HomeContent }>("/api/home/admin", {
     method: "POST",
     body: JSON.stringify(payload),

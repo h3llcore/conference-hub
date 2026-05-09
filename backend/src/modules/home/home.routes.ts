@@ -3,6 +3,8 @@ import {
   createHomeContentHandler,
   deleteHomeContentHandler,
   getAllHomeContentHandler,
+  getHomeContentByIdHandler,
+  getPublishedArticleByIdHandler,
   getPublishedHomeContentHandler,
   updateHomeContentHandler,
 } from "./home.controller.js";
@@ -12,6 +14,10 @@ import { requireRole } from "../../middlewares/requireRole.js";
 const router = Router();
 
 router.get("/", getPublishedHomeContentHandler);
+
+router.get("/content/:id", getHomeContentByIdHandler);
+
+router.get("/articles/:id", getPublishedArticleByIdHandler);
 
 router.get(
   "/admin",

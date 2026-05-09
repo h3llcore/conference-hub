@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { CalendarDays, SlidersHorizontal } from "lucide-react";
 import { getVenues } from "../features/venues/venues.api";
 import {
   apiGetHomeContent,
@@ -211,10 +211,22 @@ export default function HomePage() {
               {!loadingHomeContent &&
                 popularArticles.map((article) => (
                   <article key={article.id} className="home-article-card">
+                    <div className="home-article-card__badges">
+                      <span>Open Access</span>
+                      <span>Стаття</span>
+                    </div>
+
                     <div className="home-article-card__meta">
                       <p className="home-article-card__author">
                         {article.authorName || "Анонім"}
                       </p>
+
+                      {(article.date || article.createdAt) && (
+                        <p className="home-article-card__date">
+                          <CalendarDays size={14} />
+                          {formatDate(article.date || article.createdAt)}
+                        </p>
+                      )}
                     </div>
 
                     <h3>{article.title}</h3>
@@ -223,18 +235,12 @@ export default function HomePage() {
                       {article.description}
                     </p>
 
-                    {article.linkUrl ? (
-                      <Link
-                        to={article.linkUrl}
-                        className="home-article-card__button"
-                      >
-                        Читати детальніше
-                      </Link>
-                    ) : (
-                      <button type="button" className="home-article-card__button">
-                        Читати детальніше
-                      </button>
-                    )}
+                    <Link
+                      to={`/articles/${article.id}`}
+                      className="home-article-card__button"
+                    >
+                      Читати детальніше
+                    </Link>
                   </article>
                 ))}
             </div>
@@ -256,10 +262,14 @@ export default function HomePage() {
 
               {!loadingHomeContent &&
                 newsItems.map((item) => (
-                  <article key={item.id} className="home-news-card">
+                  <Link
+                    key={item.id}
+                    to={`/home-content/${item.id}`}
+                    className="home-news-card"
+                  >
                     <p>{item.description}</p>
-                    <span>{formatDate(item.date)}</span>
-                  </article>
+                    <span>{formatDate(item.date || item.createdAt)}</span>
+                  </Link>
                 ))}
             </div>
           </div>

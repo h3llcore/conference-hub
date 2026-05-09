@@ -48,7 +48,7 @@ export async function getPublishedHomeContent() {
       authorName: item.author
         ? `${item.author.firstName} ${item.author.lastName}`
         : "Анонім",
-      linkUrl: `/author/submission/${item.id}`,
+      linkUrl: `/articles/${item.id}`,
       imageUrl: null,
       rating: null,
       date: item.finalDecisionAt || item.createdAt,
@@ -58,6 +58,49 @@ export async function getPublishedHomeContent() {
 
     news: items.filter((item) => item.type === "NEWS"),
   };
+}
+
+export async function getHomeContentById(id: string) {
+  return prisma.homeContent.findFirst({
+    where: {
+      id,
+      isPublished: true,
+    },
+    include: {
+      createdBy: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+  });
+}
+
+export async function getPublishedArticleById(id: string) {
+  return prisma.submission.findFirst({
+    where: {
+      id,
+      status: "PUBLISHED",
+    },
+    include: {
+      author: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+          institution: true,
+          country: true,
+          academicDegree: true,
+          academicTitle: true,
+          orcid: true,
+          orcidVerified: true,
+          googleScholarUrl: true,
+        },
+      },
+    },
+  });
 }
 
 export async function getAllHomeContent() {
