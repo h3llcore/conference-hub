@@ -185,6 +185,46 @@
   transform: translateY(-1px);
 }
 
+.issues-archive__toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.issues-archive__search,
+.issues-archive__year-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+.issues-archive__search input,
+.issues-archive__year-filter select {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: #111827;
+}
+
+.issues-archive__search svg,
+.issues-archive__year-filter svg {
+  color: #64748b;
+}
+
+@media (max-width: 700px) {
+  .issues-archive__toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 800px) {
   .issues-archive__list {
     grid-template-columns: 1fr;
