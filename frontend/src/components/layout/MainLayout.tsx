@@ -20,8 +20,8 @@ const conferenceItems = [
 
 const journalItems = [
   { label: "Каталог журналів", to: "/journals" },
-  { label: "Рейтингові журнали", to: "/" },
-  { label: "Нові випуски", to: "/" },
+  { label: "Архів випусків", to: "/issues" },
+  { label: "Нові випуски", to: "/issues" },
 ];
 
 const submissionItems = [

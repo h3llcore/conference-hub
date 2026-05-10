@@ -20,22 +20,33 @@ export default function Footer() {
         <div className="site-footer__columns">
           <div className="site-footer__column">
             <h3>Платформа</h3>
+
             <Link to="/about">Про платформу</Link>
+
             <Link to="/journals">Наукові журнали</Link>
+
+            <Link to="/issues">Архів випусків</Link>
+
             <Link to="/programs">Програми конференцій</Link>
           </div>
 
           <div className="site-footer__column">
             <h3>Для авторів</h3>
+
             <Link to="/submission-rules">Правила подання</Link>
+
             <Link to="/author/submit">Подати статтю</Link>
+
             <Link to="/register">Реєстрація</Link>
           </div>
 
           <div className="site-footer__column">
             <h3>Підтримка</h3>
+
             <Link to="/contacts">Контакти</Link>
+
             <Link to="/feedback">Зворотний зв’язок</Link>
+
             <Link to="/privacy">Політика конфіденційності</Link>
           </div>
         </div>

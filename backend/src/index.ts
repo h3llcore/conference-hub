@@ -10,6 +10,7 @@ import reviewsRoutes from "./modules/reviews/reviews.routes.js";
 import notificationsRoutes from "./modules/notifications/notifications.routes.js";
 import programsRoutes from "./modules/programs/programs.routes.js";
 import homeRoutes from "./modules/home/home.routes.js";
+import publicationIssueRoutes from "./modules/publication-issues/publication-issues.routes.js";
 import path from "path";
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use("/api/reviews", reviewsRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/programs", programsRoutes);
 app.use("/api/home", homeRoutes);
+app.use("/api/publication-issues", publicationIssueRoutes);
 
 app.get("/api/health", async (req, res) => {
   try {

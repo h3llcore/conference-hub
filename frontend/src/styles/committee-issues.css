@@ -1,0 +1,327 @@
+.committee-issues {
+  padding: 32px 16px;
+}
+
+.committee-issues__container {
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.committee-issues__hero {
+  margin-bottom: 24px;
+  padding: 28px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #ffffff, #eef2ff);
+  border: 1px solid #e5e7eb;
+}
+
+.committee-issues__hero p {
+  margin: 0 0 8px;
+  color: #4f46e5;
+  font-weight: 800;
+}
+
+.committee-issues__hero h1 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 34px;
+}
+
+.committee-issues__hero span {
+  color: #64748b;
+}
+
+.committee-issues__alert {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.committee-issues__alert--success {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.committee-issues-form {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding: 24px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.committee-issues-form__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.committee-issues-form__title h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #111827;
+}
+
+.committee-issues-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.committee-issues-form label {
+  display: grid;
+  gap: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.committee-issues-form input,
+.committee-issues-form select,
+.committee-issues-form textarea,
+.committee-issue-card__add select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+  outline: none;
+  background: #ffffff;
+}
+
+.committee-issues-form input:focus,
+.committee-issues-form select:focus,
+.committee-issues-form textarea:focus,
+.committee-issue-card__add select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+}
+
+.committee-issues-form button,
+.committee-issue-card__add button,
+.committee-issue-card__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: max-content;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: #4f46e5;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.committee-issues-form button:hover,
+.committee-issue-card__add button:hover,
+.committee-issue-card__actions button:hover {
+  background: #4338ca;
+}
+
+.committee-issues-form button:disabled,
+.committee-issue-card__add button:disabled,
+.committee-issue-card__actions button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.committee-issues__list {
+  display: grid;
+  gap: 18px;
+}
+
+.committee-issues__empty {
+  padding: 24px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #64748b;
+  text-align: center;
+}
+
+.committee-issue-card {
+  padding: 24px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.committee-issue-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.committee-issue-card__type,
+.committee-issue-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.committee-issue-card__type {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.committee-issue-card__status {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.committee-issue-card__status--published {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.committee-issue-card h2 {
+  margin: 12px 0 8px;
+  color: #111827;
+  font-size: 24px;
+}
+
+.committee-issue-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.committee-issue-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.committee-issue-card__meta span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.committee-issue-card__submissions {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.committee-issue-card__submissions h3 {
+  margin: 0 0 12px;
+  color: #111827;
+  font-size: 18px;
+}
+
+.committee-issue-card__submission {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.committee-issue-card__submission:first-of-type {
+  border-top: none;
+}
+
+.committee-issue-card__submission strong {
+  display: block;
+  color: #111827;
+}
+
+.committee-issue-card__submission span {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.committee-issue-card__submission button {
+  border: none;
+  border-radius: 10px;
+  padding: 9px;
+  background: #fee2e2;
+  color: #991b1b;
+  cursor: pointer;
+}
+
+.committee-issue-card__add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.committee-issue-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.committee-issue-card__delete {
+  background: #ef4444 !important;
+}
+
+.committee-issue-card__delete:hover {
+  background: #dc2626 !important;
+}
+
+.committee-issue-card__view {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 42px;
+  padding: 0 16px;
+
+  border-radius: 14px;
+
+  background: #0f172a;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+
+  transition: 0.2s ease;
+}
+
+.committee-issue-card__view:hover {
+  background: #1e293b;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 800px) {
+  .committee-issues-form__grid,
+  .committee-issue-card__add {
+    grid-template-columns: 1fr;
+  }
+
+  .committee-issue-card__top {
+    flex-direction: column;
+  }
+
+  .committee-issues__hero h1 {
+    font-size: 28px;
+  }
+}

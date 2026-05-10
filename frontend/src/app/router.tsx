@@ -30,6 +30,9 @@ import ContactsPage from "../pages/ContactsPage";
 import FeedbackPage from "../pages/FeedbackPage";
 import SubmissionRulesPage from "../pages/SubmissionRulesPage";
 import PrivacyPage from "../pages/PrivacyPage";
+import CommitteeIssuesPage from "../pages/CommitteeIssuesPage";
+import IssueDetailsPage from "../pages/IssueDetailsPage";
+import IssuesArchivePage from "../pages/IssuesArchivePage";
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +56,8 @@ export const router = createBrowserRouter([
 
       { path: "articles/:id", element: <ArticleDetailsPage /> },
       { path: "home-content/:id", element: <HomeContentDetailsPage /> },
+      { path: "issues/:id", element: <IssueDetailsPage /> },
+      { path: "issues", element: <IssuesArchivePage /> },
 
       { path: "programs", element: <ProgramsPage /> },
       { path: "programs/archive", element: <ProgramsArchivePage /> },
@@ -97,6 +102,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "committee", element: <CommitteeDashboard /> },
           { path: "committee/content", element: <CommitteeContentPage /> },
+          { path: "committee/issues", element: <CommitteeIssuesPage /> },
         ],
       },
 

@@ -1,0 +1,196 @@
+.issues-archive {
+  padding: 32px 16px;
+}
+
+.issues-archive__container {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.issues-archive__hero {
+  margin-bottom: 22px;
+  padding: 30px;
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(79, 70, 229, 0.12),
+      transparent 28%
+    ),
+    linear-gradient(135deg, #ffffff, #f8fafc);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+}
+
+.issues-archive__hero p {
+  margin: 0 0 8px;
+  color: #4f46e5;
+  font-weight: 800;
+}
+
+.issues-archive__hero h1 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+.issues-archive__hero span {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.issues-archive__filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.issues-archive__filters button {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.issues-archive__filters button:hover,
+.issues-archive__filters button.is-active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+.issues-archive__alert {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.issues-archive__empty {
+  padding: 24px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #64748b;
+  text-align: center;
+}
+
+.issues-archive__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.issues-archive-card {
+  padding: 24px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  transition: 0.2s ease;
+}
+
+.issues-archive-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.issues-archive-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.issues-archive-card__type,
+.issues-archive-card__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.issues-archive-card__type {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.issues-archive-card__date {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.issues-archive-card h2 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 23px;
+  line-height: 1.25;
+}
+
+.issues-archive-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.issues-archive-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.issues-archive-card__meta span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.issues-archive-card__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.issues-archive-card__button:hover {
+  background: #1e293b;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 800px) {
+  .issues-archive__list {
+    grid-template-columns: 1fr;
+  }
+
+  .issues-archive__hero h1 {
+    font-size: 28px;
+  }
+}

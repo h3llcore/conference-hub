@@ -1,4 +1,10 @@
-import { Home, LayoutDashboard, LogOut, UserRound } from "lucide-react";
+import {
+  BookOpen,
+  Home,
+  LayoutDashboard,
+  LogOut,
+  UserRound,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AuthUser } from "../../types/auth.types";
@@ -22,7 +28,10 @@ function getRoleLabel(role?: string) {
   return "Користувач";
 }
 
-export default function HeaderProfileMenu({ user, logout }: HeaderProfileMenuProps) {
+export default function HeaderProfileMenu({
+  user,
+  logout,
+}: HeaderProfileMenuProps) {
   const navigate = useNavigate();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -62,13 +71,16 @@ export default function HeaderProfileMenu({ user, logout }: HeaderProfileMenuPro
     setIsProfileOpen(false);
     navigate("/login", { replace: true });
   }
-  
+
   function closeMenu() {
     setIsProfileOpen(false);
   }
 
   return (
-    <div ref={profileRef} className={`layout-header__profile ${isProfileOpen ? "is-open" : ""}`}>
+    <div
+      ref={profileRef}
+      className={`layout-header__profile ${isProfileOpen ? "is-open" : ""}`}
+    >
       <button
         type="button"
         className="layout-header__profile-trigger"
@@ -76,11 +88,15 @@ export default function HeaderProfileMenu({ user, logout }: HeaderProfileMenuPro
         aria-expanded={isProfileOpen}
         aria-haspopup="menu"
       >
-        <div className="layout-header__profile-avatar">{profileTitle.charAt(0).toUpperCase()}</div>
+        <div className="layout-header__profile-avatar">
+          {profileTitle.charAt(0).toUpperCase()}
+        </div>
 
         <div className="layout-header__profile-info">
           <span className="layout-header__profile-name">{profileTitle}</span>
-          <span className="layout-header__profile-role">{getRoleLabel(user.role)}</span>
+          <span className="layout-header__profile-role">
+            {getRoleLabel(user.role)}
+          </span>
         </div>
       </button>
 
@@ -106,15 +122,27 @@ export default function HeaderProfileMenu({ user, logout }: HeaderProfileMenuPro
         </Link>
 
         {user.role === "COMMITTEE" && (
-          <Link
-            to="/committee/content"
-            className="layout-header__profile-item"
-            onClick={closeMenu}
-            role="menuitem"
-          >
-            <Home size={16} />
-            <span>Панель керування</span>
-          </Link>
+          <>
+            <Link
+              to="/committee/content"
+              className="layout-header__profile-item"
+              onClick={closeMenu}
+              role="menuitem"
+            >
+              <Home size={16} />
+              <span>Керування головною</span>
+            </Link>
+
+            <Link
+              to="/committee/issues"
+              className="layout-header__profile-item"
+              onClick={closeMenu}
+              role="menuitem"
+            >
+              <BookOpen size={16} />
+              <span>Випуски / збірники</span>
+            </Link>
+          </>
         )}
 
         <button
