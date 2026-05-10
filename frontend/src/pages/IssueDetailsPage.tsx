@@ -69,9 +69,9 @@ export default function IssueDetailsPage() {
   return (
     <section className="issue-details">
       <div className="issue-details__container">
-        <Link to="/" className="issue-details__back">
+        <Link to="/issues" className="issue-details__back">
           <ArrowLeft size={17} />
-          На головну
+          До архіву випусків
         </Link>
 
         <article className="issue-details__hero">
