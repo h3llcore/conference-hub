@@ -59,6 +59,46 @@ router.get("/file/:fileName/download", requireAuth, (req, res) => {
   });
 });
 
+router.get("/file/:fileName/view", requireAuth, (req, res) => {
+  const { fileName } = req.params;
+
+  const filePath = path.join(
+    process.cwd(),
+    "uploads",
+    "submissions",
+    fileName,
+  );
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+
+  return res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) {
+      return res.status(404).json({ message: "File not found" });
+    }
+  });
+});
+
+router.get("/public-file/:fileName/view", (req, res) => {
+  const { fileName } = req.params;
+
+  const filePath = path.join(
+    process.cwd(),
+    "uploads",
+    "submissions",
+    fileName,
+  );
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+
+  return res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) {
+      return res.status(404).json({ message: "File not found" });
+    }
+  });
+});
+
 router.patch("/:id", requireAuth, upload.single("file"), updateSubmissionHandler);
 
 router.patch(
