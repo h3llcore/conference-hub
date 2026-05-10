@@ -219,6 +219,51 @@
   color: #64748b;
 }
 
+.issues-archive__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  margin-top: 28px;
+}
+
+.issues-archive__pagination button {
+  min-width: 110px;
+  min-height: 42px;
+
+  padding: 0 16px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: #0f172a;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.issues-archive__pagination button:hover:not(:disabled) {
+  background: #1e293b;
+  transform: translateY(-1px);
+}
+
+.issues-archive__pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.issues-archive__pagination span {
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 @media (max-width: 700px) {
   .issues-archive__toolbar {
     grid-template-columns: 1fr;

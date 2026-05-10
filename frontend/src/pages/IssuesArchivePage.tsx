@@ -14,6 +14,8 @@ import {
 } from "../features/publication-issues/publication-issues.api";
 import "../styles/issues-archive.css";
 
+const ITEMS_PER_PAGE = 6;
+
 function formatDate(date?: string | null) {
   if (!date) return "Не вказано";
 
@@ -25,24 +27,19 @@ function formatDate(date?: string | null) {
 }
 
 function getTypeLabel(type: PublicationIssueType) {
-  return type === "JOURNAL"
-    ? "Випуск журналу"
-    : "Збірник конференції";
+  return type === "JOURNAL" ? "Випуск журналу" : "Збірник конференції";
 }
 
 export default function IssuesArchivePage() {
   const [issues, setIssues] = useState<PublicationIssue[]>([]);
-
-  const [typeFilter, setTypeFilter] = useState<
-    "ALL" | PublicationIssueType
-  >("ALL");
-
+  const [typeFilter, setTypeFilter] = useState<"ALL" | PublicationIssueType>(
+    "ALL",
+  );
   const [search, setSearch] = useState("");
-
   const [yearFilter, setYearFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -52,7 +49,6 @@ export default function IssuesArchivePage() {
         setError("");
 
         const data = await getPublicationIssues();
-
         setIssues(data.issues || []);
       } catch (e: any) {
         setError(e.message || "Не вдалося завантажити архів.");
@@ -64,13 +60,13 @@ export default function IssuesArchivePage() {
     loadIssues();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, yearFilter, typeFilter]);
+
   const years = useMemo(() => {
     const uniqueYears = Array.from(
-      new Set(
-        issues
-          .map((issue) => issue.year)
-          .filter(Boolean),
-      ),
+      new Set(issues.map((issue) => issue.year).filter(Boolean)),
     );
 
     return uniqueYears.sort((a, b) => Number(b) - Number(a));
@@ -78,28 +74,22 @@ export default function IssuesArchivePage() {
 
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
-      if (issue.status !== "PUBLISHED") {
-        return false;
-      }
+      if (issue.status !== "PUBLISHED") return false;
 
       if (typeFilter !== "ALL" && issue.type !== typeFilter) {
         return false;
       }
 
-      if (
-        yearFilter !== "ALL" &&
-        String(issue.year) !== yearFilter
-      ) {
+      if (yearFilter !== "ALL" && String(issue.year) !== yearFilter) {
         return false;
       }
 
       const normalizedSearch = search.trim().toLowerCase();
 
       if (normalizedSearch.length > 0) {
-        const target =
-          `${issue.title} ${issue.description || ""} ${
-            issue.venue?.title || ""
-          }`.toLowerCase();
+        const target = `${issue.title} ${issue.description || ""} ${
+          issue.venue?.title || ""
+        }`.toLowerCase();
 
         if (!target.includes(normalizedSearch)) {
           return false;
@@ -110,19 +100,34 @@ export default function IssuesArchivePage() {
     });
   }, [issues, typeFilter, yearFilter, search]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredIssues.length / ITEMS_PER_PAGE));
+
+  const paginatedIssues = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+
+    return filteredIssues.slice(startIndex, endIndex);
+  }, [filteredIssues, currentPage]);
+
+  function goToPreviousPage() {
+    setCurrentPage((prev) => Math.max(1, prev - 1));
+  }
+
+  function goToNextPage() {
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+  }
+
   return (
     <section className="issues-archive">
       <div className="issues-archive__container">
         <div className="issues-archive__hero">
           <p>Цифровий архів</p>
 
-          <h1>
-            Архів випусків журналів та збірників конференцій
-          </h1>
+          <h1>Архів випусків журналів та збірників конференцій</h1>
 
           <span>
-            Переглядайте опубліковані випуски, збірники
-            матеріалів та статті, що увійшли до них.
+            Переглядайте опубліковані випуски, збірники матеріалів та статті,
+            що увійшли до них.
           </span>
         </div>
 
@@ -134,9 +139,7 @@ export default function IssuesArchivePage() {
               type="text"
               placeholder="Пошук за назвою, описом або журналом..."
               value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
+              onChange={(event) => setSearch(event.target.value)}
             />
           </div>
 
@@ -145,9 +148,7 @@ export default function IssuesArchivePage() {
 
             <select
               value={yearFilter}
-              onChange={(event) =>
-                setYearFilter(event.target.value)
-              }
+              onChange={(event) => setYearFilter(event.target.value)}
             >
               <option value="ALL">Усі роки</option>
 
@@ -171,9 +172,7 @@ export default function IssuesArchivePage() {
 
           <button
             type="button"
-            className={
-              typeFilter === "JOURNAL" ? "is-active" : ""
-            }
+            className={typeFilter === "JOURNAL" ? "is-active" : ""}
             onClick={() => setTypeFilter("JOURNAL")}
           >
             Випуски журналів
@@ -181,93 +180,89 @@ export default function IssuesArchivePage() {
 
           <button
             type="button"
-            className={
-              typeFilter === "CONFERENCE"
-                ? "is-active"
-                : ""
-            }
-            onClick={() =>
-              setTypeFilter("CONFERENCE")
-            }
+            className={typeFilter === "CONFERENCE" ? "is-active" : ""}
+            onClick={() => setTypeFilter("CONFERENCE")}
           >
             Збірники конференцій
           </button>
         </div>
 
-        {error && (
-          <div className="issues-archive__alert">
-            {error}
-          </div>
-        )}
+        {error && <div className="issues-archive__alert">{error}</div>}
 
         {loading ? (
-          <div className="issues-archive__empty">
-            Завантаження архіву...
-          </div>
+          <div className="issues-archive__empty">Завантаження архіву...</div>
         ) : filteredIssues.length === 0 ? (
           <div className="issues-archive__empty">
             За вашим запитом нічого не знайдено.
           </div>
         ) : (
-          <div className="issues-archive__list">
-            {filteredIssues.map((issue) => (
-              <article
-                key={issue.id}
-                className="issues-archive-card"
-              >
-                <div className="issues-archive-card__top">
-                  <span className="issues-archive-card__type">
-                    <BookOpen size={15} />
-                    {getTypeLabel(issue.type)}
-                  </span>
+          <>
+            <div className="issues-archive__list">
+              {paginatedIssues.map((issue) => (
+                <article key={issue.id} className="issues-archive-card">
+                  <div className="issues-archive-card__top">
+                    <span className="issues-archive-card__type">
+                      <BookOpen size={15} />
+                      {getTypeLabel(issue.type)}
+                    </span>
 
-                  <span className="issues-archive-card__date">
-                    <CalendarDays size={14} />
-                    {formatDate(issue.publishedAt)}
-                  </span>
-                </div>
+                    <span className="issues-archive-card__date">
+                      <CalendarDays size={14} />
+                      {formatDate(issue.publishedAt)}
+                    </span>
+                  </div>
 
-                <h2>{issue.title}</h2>
+                  <h2>{issue.title}</h2>
 
-                <p>
-                  {issue.description ||
-                    "Опис випуску не додано."}
-                </p>
+                  <p>{issue.description || "Опис випуску не додано."}</p>
 
-                <div className="issues-archive-card__meta">
-                  <span>
-                    {issue.venue?.title ||
-                      "Без майданчика"}
-                  </span>
+                  <div className="issues-archive-card__meta">
+                    <span>{issue.venue?.title || "Без майданчика"}</span>
 
-                  {issue.year && (
-                    <span>Рік: {issue.year}</span>
-                  )}
+                    {issue.year && <span>Рік: {issue.year}</span>}
 
-                  {issue.volume && (
-                    <span>Том: {issue.volume}</span>
-                  )}
+                    {issue.volume && <span>Том: {issue.volume}</span>}
 
-                  {issue.issueNumber && (
-                    <span>№ {issue.issueNumber}</span>
-                  )}
+                    {issue.issueNumber && <span>№ {issue.issueNumber}</span>}
 
-                  <span>
-                    Статей:{" "}
-                    {issue.submissions?.length || 0}
-                  </span>
-                </div>
+                    <span>Статей: {issue.submissions?.length || 0}</span>
+                  </div>
 
-                <Link
-                  to={`/issues/${issue.id}`}
-                  className="issues-archive-card__button"
+                  <Link
+                    to={`/issues/${issue.id}`}
+                    className="issues-archive-card__button"
+                  >
+                    <Eye size={16} />
+                    Переглянути
+                  </Link>
+                </article>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="issues-archive__pagination">
+                <button
+                  type="button"
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
                 >
-                  <Eye size={16} />
-                  Переглянути
-                </Link>
-              </article>
-            ))}
-          </div>
+                  Назад
+                </button>
+
+                <span>
+                  Сторінка {currentPage} з {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Далі
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>
