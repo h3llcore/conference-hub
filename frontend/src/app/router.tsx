@@ -39,6 +39,12 @@ import ArticleDetailsPage from "../pages/ArticleDetailsPage";
 import IssuesArchivePage from "../pages/IssuesArchivePage";
 import IssueDetailsPage from "../pages/IssueDetailsPage";
 
+import AboutPage from "../pages/AboutPage";
+import ContactsPage from "../pages/ContactsPage";
+import FeedbackPage from "../pages/FeedbackPage";
+import PrivacyPage from "../pages/PrivacyPage";
+import SubmissionRulesPage from "../pages/SubmissionRulesPage";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -65,6 +71,12 @@ export const router = createBrowserRouter([
       { path: "articles/:id", element: <ArticleDetailsPage /> },
 
       { path: "orcid/callback", element: <OrcidCallbackPage /> },
+
+      { path: "about", element: <AboutPage /> },
+      { path: "contacts", element: <ContactsPage /> },
+      { path: "feedback", element: <FeedbackPage /> },
+      { path: "privacy", element: <PrivacyPage /> },
+      { path: "submission-rules", element: <SubmissionRulesPage /> },
 
       {
         element: <ProtectedRoute />,
