@@ -1,5 +1,6 @@
 import { Flag, LogIn, Upload, User } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
+import Footer from "./Footer";
 import HeaderDropdown from "./HeaderDropdown";
 import HeaderProfileMenu from "./HeaderProfileMenu";
 import { useAuth } from "../../features/auth/AuthContext";
@@ -25,14 +26,14 @@ const journalItems = [
 
 const submissionItems = [
   { label: "Подати статтю", to: "/author/submit" },
-  { label: "Вимоги до оформлення", to: "/" },
+  { label: "Вимоги до оформлення", to: "/submission-rules" },
   { label: "Статус подання", to: "/author" },
 ];
 
 const contactItems = [
-  { label: "Адміністрація", to: "/" },
-  { label: "Технічна підтримка", to: "/" },
-  { label: "Зворотний зв’язок", to: "/" },
+  { label: "Адміністрація", to: "/contacts" },
+  { label: "Технічна підтримка", to: "/feedback" },
+  { label: "Зворотний зв’язок", to: "/feedback" },
 ];
 
 export default function MainLayout() {
@@ -70,7 +71,7 @@ export default function MainLayout() {
             </Link>
 
             <Link
-              to="/"
+              to="/about"
               className="layout-header__menu-link layout-header__menu-link--static"
             >
               Інформація про платформу
@@ -121,6 +122,8 @@ export default function MainLayout() {
       <main className="layout-main">
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   );
 }

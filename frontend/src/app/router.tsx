@@ -25,6 +25,11 @@ import ProfilePage from "../pages/ProfilePage";
 import OrcidCallbackPage from "../pages/OrcidCallbackPage";
 import ArticleDetailsPage from "../pages/ArticleDetailsPage";
 import HomeContentDetailsPage from "../pages/HomeContentDetailsPage";
+import AboutPage from "../pages/AboutPage";
+import ContactsPage from "../pages/ContactsPage";
+import FeedbackPage from "../pages/FeedbackPage";
+import SubmissionRulesPage from "../pages/SubmissionRulesPage";
+import PrivacyPage from "../pages/PrivacyPage";
 
 export const router = createBrowserRouter([
   {
@@ -37,6 +42,12 @@ export const router = createBrowserRouter([
       { path: "register", element: <RegisterPage /> },
       { path: "unauthorized", element: <UnauthorizedPage /> },
       { path: "orcid/callback", element: <OrcidCallbackPage /> },
+
+      { path: "about", element: <AboutPage /> },
+      { path: "contacts", element: <ContactsPage /> },
+      { path: "feedback", element: <FeedbackPage /> },
+      { path: "submission-rules", element: <SubmissionRulesPage /> },
+      { path: "privacy", element: <PrivacyPage /> },
 
       { path: "journals", element: <JournalsPage /> },
 

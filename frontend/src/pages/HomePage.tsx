@@ -275,10 +275,6 @@ export default function HomePage() {
           </div>
         </aside>
       </div>
-
-      <footer className="home-footer">
-        © 2026 Conference Hub. Усі права захищено.
-      </footer>
     </section>
   );
 }
