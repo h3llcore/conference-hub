@@ -15,6 +15,7 @@ const conferenceItems = [
   { label: "Міжнародні конференції", to: "/" },
   { label: "Всеукраїнські конференції", to: "/" },
   { label: "Програми конференцій", to: "/programs" },
+  { label: "Збірники конференцій", to: "/issues" },
   { label: "Архів конференцій", to: "/programs/archive" },
 ];
 
@@ -47,10 +48,12 @@ export default function MainLayout() {
           <div className="layout-header__left">
             <Link to="/" className="layout-header__brand">
               <div className="layout-header__logo-circle">CH</div>
+
               <div className="layout-header__brand-text">
                 <span className="layout-header__brand-title">
                   Conference Hub
                 </span>
+
                 <span className="layout-header__brand-subtitle">
                   Наукова платформа
                 </span>
@@ -60,8 +63,16 @@ export default function MainLayout() {
 
           <nav className="layout-header__menu">
             <HeaderDropdown title="Конференції" items={conferenceItems} />
-            <HeaderDropdown title="Наукові журнали" items={journalItems} />
-            <HeaderDropdown title="Подання матеріалів" items={submissionItems} />
+
+            <HeaderDropdown
+              title="Наукові журнали"
+              items={journalItems}
+            />
+
+            <HeaderDropdown
+              title="Подання матеріалів"
+              items={submissionItems}
+            />
 
             <Link
               to="/"
