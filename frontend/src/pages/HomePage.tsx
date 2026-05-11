@@ -438,7 +438,7 @@ export default function HomePage() {
                     to={`/home-content/${item.id}`}
                     className="home-news-card"
                   >
-                    <p>{item.description}</p>
+                   <p>{item.title}</p>
                     <span>{formatDate(item.date || item.createdAt)}</span>
                   </Link>
                 ))}
