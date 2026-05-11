@@ -1,0 +1,115 @@
+.unauthorized-page {
+  width: 100%;
+  min-height: calc(100vh - 220px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.unauthorized-card {
+  width: 100%;
+  max-width: 620px;
+  padding: 48px;
+  border-radius: 32px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  text-align: center;
+}
+
+.unauthorized-card__icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 22px;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unauthorized-card__eyebrow {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.unauthorized-card h1 {
+  margin: 0 0 14px;
+  font-size: 38px;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.unauthorized-card__description {
+  margin: 0 auto;
+  max-width: 480px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #475569;
+}
+
+.unauthorized-card__actions {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.unauthorized-card__button {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.unauthorized-card__button--primary {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.unauthorized-card__button--primary:hover {
+  background: #1e293b;
+}
+
+.unauthorized-card__button--secondary {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #d1d5db;
+}
+
+.unauthorized-card__button--secondary:hover {
+  background: #f8fafc;
+}
+
+@media (max-width: 640px) {
+  .unauthorized-card {
+    padding: 32px 20px;
+    border-radius: 24px;
+  }
+
+  .unauthorized-card h1 {
+    font-size: 28px;
+  }
+
+  .unauthorized-card__actions {
+    flex-direction: column;
+  }
+
+  .unauthorized-card__button {
+    width: 100%;
+    justify-content: center;
+  }
+}

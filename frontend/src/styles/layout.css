@@ -101,7 +101,7 @@
 }
 
 .layout-header__lang {
-  min-width: 80px; /* фіксує ширину */
+  min-width: 80px;
   height: 40px;
   padding: 0 12px;
   border-radius: 12px;
@@ -110,7 +110,7 @@
   color: #334155;
   display: inline-flex;
   align-items: center;
-  justify-content: center; /* важливо для центрування */
+  justify-content: center;
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -157,6 +157,7 @@
   gap: 8px;
   font-size: 13px;
   font-weight: 700;
+  text-decoration: none;
   transition: 0.2s ease;
 }
 
@@ -166,6 +167,34 @@
 
 .layout-main {
   width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.layout-main > *:first-child {
+  margin-top: 0;
+}
+
+.layout-header__menu-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.layout-header__menu-link:hover {
+  color: #0f172a;
+}
+
+.layout-header__menu-link--static {
+  display: inline-flex;
 }
 
 @media (max-width: 1280px) {
@@ -223,26 +252,4 @@
   .layout-header__auth-link {
     padding: 0 12px;
   }
-}
-
-.layout-header__menu-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: #334155;
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.2s ease;
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-.layout-header__menu-link:hover {
-  color: #0f172a;
-}
-
-.layout-header__menu-link--static {
-  display: inline-flex;
 }
