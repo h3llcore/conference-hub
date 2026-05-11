@@ -33,7 +33,6 @@ const submissionItems = [
 
 const contactItems = [
   { label: "Адміністрація", to: "/contacts" },
-  { label: "Технічна підтримка", to: "/feedback" },
   { label: "Зворотний зв’язок", to: "/feedback" },
 ];
 
