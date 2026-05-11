@@ -10,6 +10,42 @@ type GetVenuesParams = {
   sort?: "newest" | "oldest";
 };
 
+export type Venue = {
+  id: string;
+  title: string;
+  description: string;
+  type: "JOURNAL" | "CONFERENCE";
+  deadline: string;
+  createdAt: string;
+};
+
+export type VenueDetails = Venue & {
+  rating: number;
+  stats: {
+    publishedIssues: number;
+    publishedArticles: number;
+  };
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  publishedIssues: {
+    id: string;
+    title: string;
+    description?: string | null;
+    year?: number | null;
+    volume?: number | null;
+    issueNumber?: number | null;
+    publishedAt?: string | null;
+    submissions: {
+      id: string;
+      title: string;
+    }[];
+  }[];
+};
+
 export async function getVenues(params: GetVenuesParams = {}) {
   const searchParams = new URLSearchParams();
 
@@ -30,7 +66,24 @@ export async function getVenues(params: GetVenuesParams = {}) {
       throw new Error(data.message || "Failed to fetch venues");
     }
 
-    return data;
+    return data as { venues: Venue[] };
+  } catch {
+    throw new Error("Сервер повернув некоректну відповідь");
+  }
+}
+
+export async function getVenueById(id: string) {
+  const res = await fetch(buildUrl(`/venues/${id}`));
+  const text = await res.text();
+
+  try {
+    const data = JSON.parse(text);
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to fetch venue");
+    }
+
+    return data as { venue: VenueDetails };
   } catch {
     throw new Error("Сервер повернув некоректну відповідь");
   }

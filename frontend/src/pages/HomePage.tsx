@@ -331,14 +331,18 @@ export default function HomePage() {
               {!loadingJournals &&
                 latestJournals.length > 0 &&
                 latestJournals.map((journal, index) => (
-                  <article key={journal.id} className="home-journal-card">
+                  <Link
+                    key={journal.id}
+                    to={`/journals/${journal.id}`}
+                    className="home-journal-card"
+                  >
                     <div>
                       <h3>{journal.title}</h3>
                       <p>Наукове видання</p>
                     </div>
 
                     <span>{(4.9 - index * 0.1).toFixed(1)}</span>
-                  </article>
+                  </Link>
                 ))}
             </div>
           </div>
@@ -353,7 +357,9 @@ export default function HomePage() {
 
             <div className="home-articles">
               {loadingHomeContent && (
-                <div>{isSearchMode ? "Пошук статей..." : "Завантаження статей..."}</div>
+                <div>
+                  {isSearchMode ? "Пошук статей..." : "Завантаження статей..."}
+                </div>
               )}
 
               {!loadingHomeContent && popularArticles.length === 0 && (

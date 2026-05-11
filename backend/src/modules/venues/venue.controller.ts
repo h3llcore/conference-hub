@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../config/prisma.js";
-import { getVenues } from "./venue.service.js";
+import { getVenueById, getVenues } from "./venue.service.js";
 
 export async function listVenues(req: Request, res: Response) {
   try {
@@ -17,6 +17,23 @@ export async function listVenues(req: Request, res: Response) {
     });
 
     return res.json({ venues });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getVenueDetails(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const venue = await getVenueById(id);
+
+    if (!venue) {
+      return res.status(404).json({ message: "Venue not found" });
+    }
+
+    return res.json({ venue });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Server error" });
