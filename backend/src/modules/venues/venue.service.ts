@@ -1,5 +1,5 @@
+import { VenueType, type Venue } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
-import { VenueType } from "@prisma/client";
 
 type GetVenuesOptions = {
   type?: "JOURNAL" | "CONFERENCE";
@@ -7,16 +7,70 @@ type GetVenuesOptions = {
   sort?: "newest" | "oldest";
 };
 
+type VenueWithMetrics = Venue & {
+  rating: number;
+  stats: {
+    publishedIssues: number;
+    publishedArticles: number;
+  };
+};
+
+function calculateVenueRating(params: {
+  publishedArticles: number;
+  publishedIssues: number;
+}) {
+  const { publishedArticles, publishedIssues } = params;
+
+  const rawRating = 3.5 + publishedArticles * 0.1 + publishedIssues * 0.05;
+
+  return Number(Math.min(5, rawRating).toFixed(1));
+}
+
+async function attachVenueMetrics<T extends Venue>(
+  venue: T,
+): Promise<T & VenueWithMetrics> {
+  const [publishedIssues, publishedArticles] = await Promise.all([
+    prisma.publicationIssue.count({
+      where: {
+        venueId: venue.id,
+        status: "PUBLISHED",
+      },
+    }),
+
+    prisma.submission.count({
+      where: {
+        status: "PUBLISHED",
+        venueType: venue.type,
+        venue: venue.title,
+      },
+    }),
+  ]);
+
+  return {
+    ...venue,
+    rating: calculateVenueRating({
+      publishedArticles,
+      publishedIssues,
+    }),
+    stats: {
+      publishedIssues,
+      publishedArticles,
+    },
+  };
+}
+
 export async function getVenues(options: GetVenuesOptions = {}) {
   const { type, limit, sort = "newest" } = options;
 
-  return prisma.venue.findMany({
+  const venues = await prisma.venue.findMany({
     where: type ? { type: type as VenueType } : undefined,
     orderBy: {
       createdAt: sort === "oldest" ? "asc" : "desc",
     },
     take: limit,
   });
+
+  return Promise.all(venues.map((venue) => attachVenueMetrics(venue)));
 }
 
 export async function getVenueById(id: string) {
@@ -36,7 +90,9 @@ export async function getVenueById(id: string) {
 
   if (!venue) return null;
 
-  const [publishedIssues, publishedArticlesCount] = await Promise.all([
+  const [venueWithMetrics, publishedIssues] = await Promise.all([
+    attachVenueMetrics(venue),
+
     prisma.publicationIssue.findMany({
       where: {
         venueId: id,
@@ -54,30 +110,10 @@ export async function getVenueById(id: string) {
         },
       },
     }),
-
-    prisma.submission.count({
-      where: {
-        status: "PUBLISHED",
-        venueType: venue.type,
-        venue: venue.title,
-      },
-    }),
   ]);
 
-  const issuesCount = publishedIssues.length;
-
-  const rating = Math.min(
-    5,
-    3.5 + publishedArticlesCount * 0.1 + issuesCount * 0.05,
-  );
-
   return {
-    ...venue,
-    rating: Number(rating.toFixed(1)),
-    stats: {
-      publishedIssues: issuesCount,
-      publishedArticles: publishedArticlesCount,
-    },
+    ...venueWithMetrics,
     publishedIssues,
   };
 }

@@ -25,6 +25,11 @@ type Venue = {
   description?: string;
   type: "JOURNAL" | "CONFERENCE";
   deadline?: string;
+  rating?: number;
+  stats?: {
+    publishedIssues: number;
+    publishedArticles: number;
+  };
 };
 
 function formatDate(date?: string | null) {
@@ -35,6 +40,14 @@ function formatDate(date?: string | null) {
     month: "2-digit",
     year: "numeric",
   });
+}
+
+function formatRating(value?: number) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "0.0";
+  }
+
+  return value.toFixed(1);
 }
 
 const emptyStats: HomeStats = {
@@ -330,7 +343,7 @@ export default function HomePage() {
 
               {!loadingJournals &&
                 latestJournals.length > 0 &&
-                latestJournals.map((journal, index) => (
+                latestJournals.map((journal) => (
                   <Link
                     key={journal.id}
                     to={`/journals/${journal.id}`}
@@ -338,10 +351,13 @@ export default function HomePage() {
                   >
                     <div>
                       <h3>{journal.title}</h3>
-                      <p>Наукове видання</p>
+                      <p>
+                        Статей: {journal.stats?.publishedArticles ?? 0} ·
+                        Випусків: {journal.stats?.publishedIssues ?? 0}
+                      </p>
                     </div>
 
-                    <span>{(4.9 - index * 0.1).toFixed(1)}</span>
+                    <span>{formatRating(journal.rating)}</span>
                   </Link>
                 ))}
             </div>

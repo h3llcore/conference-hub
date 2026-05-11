@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, LinkIcon, Plus, Send } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  FileText,
+  LinkIcon,
+  Plus,
+  Send,
+  UsersRound,
+} from "lucide-react";
 import { useParams } from "react-router-dom";
 import {
   addProgramItem,
@@ -76,6 +84,13 @@ function formatTime(date?: string | null) {
   });
 }
 
+function getStatusLabel(status: string) {
+  if (status === "PUBLISHED") return "Опубліковано";
+  if (status === "FINISHED") return "Завершено";
+  if (status === "ARCHIVED") return "В архіві";
+  return "Чернетка";
+}
+
 export default function ProgramDetailsPage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -131,6 +146,27 @@ export default function ProgramDetailsPage() {
   const sortedSections = useMemo(() => {
     return [...(program?.sections || [])].sort((a, b) => a.order - b.order);
   }, [program]);
+
+  const programStats = useMemo(() => {
+    const sectionsCount = sortedSections.length;
+
+    const reportsCount = sortedSections.reduce(
+      (total, section) => total + section.items.length,
+      0,
+    );
+
+    const speakersCount = new Set(
+      sortedSections.flatMap((section) =>
+        section.items.map((item) => item.speakerEmail || item.speakerName),
+      ),
+    ).size;
+
+    return {
+      sectionsCount,
+      reportsCount,
+      speakersCount,
+    };
+  }, [sortedSections]);
 
   function handleSectionChange(
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -195,7 +231,11 @@ export default function ProgramDetailsPage() {
   async function handleAddItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!itemForm.sectionId || !itemForm.title.trim() || !itemForm.speakerName.trim()) {
+    if (
+      !itemForm.sectionId ||
+      !itemForm.title.trim() ||
+      !itemForm.speakerName.trim()
+    ) {
       setError("Оберіть секцію, вкажіть назву доповіді та доповідача.");
       return;
     }
@@ -293,13 +333,7 @@ export default function ProgramDetailsPage() {
           <span
             className={`program-card__status program-card__status--${program.status.toLowerCase()}`}
           >
-            {program.status === "PUBLISHED"
-              ? "Опубліковано"
-              : program.status === "FINISHED"
-                ? "Завершено"
-                : program.status === "ARCHIVED"
-                  ? "В архіві"
-                  : "Чернетка"}
+            {getStatusLabel(program.status)}
           </span>
 
           <h1>{program.title}</h1>
@@ -323,7 +357,11 @@ export default function ProgramDetailsPage() {
         {isCommittee && (
           <div className="program-details__actions">
             {program.status === "DRAFT" && (
-              <button type="button" onClick={handlePublish} disabled={actionLoading}>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={actionLoading}
+              >
                 Опублікувати
               </button>
             )}
@@ -351,6 +389,70 @@ export default function ProgramDetailsPage() {
             )}
           </div>
         )}
+      </div>
+
+      <div className="program-overview-grid">
+        <article className="program-overview-card">
+          <div className="program-overview-card__icon">
+            <FileText size={20} />
+          </div>
+
+          <h2>Про конференцію</h2>
+
+          <p>
+            {program.venue?.description ||
+              "Конференція призначена для представлення наукових результатів, обміну досвідом та обговорення актуальних досліджень."}
+          </p>
+        </article>
+
+        <article className="program-overview-card">
+          <div className="program-overview-card__icon">
+            <CheckCircle2 size={20} />
+          </div>
+
+          <h2>Вимоги до участі</h2>
+
+          <ul>
+            <li>подання наукової статті або доповіді;</li>
+            <li>відповідність матеріалів тематиці конференції;</li>
+            <li>дотримання дедлайнів та вимог оформлення;</li>
+            <li>проходження перевірки оргкомітетом.</li>
+          </ul>
+        </article>
+
+        <article className="program-overview-card">
+          <div className="program-overview-card__icon">
+            <UsersRound size={20} />
+          </div>
+
+          <h2>Учасники та секції</h2>
+
+          <p>
+            Програма конференції складається із тематичних секцій, у межах яких
+            розміщуються доповіді авторів та запрошених учасників.
+          </p>
+        </article>
+
+        <article className="program-overview-card program-overview-card--stats">
+          <h2>Статистика програми</h2>
+
+          <div className="program-overview-stats">
+            <div>
+              <strong>{programStats.sectionsCount}</strong>
+              <span>секцій</span>
+            </div>
+
+            <div>
+              <strong>{programStats.reportsCount}</strong>
+              <span>доповідей</span>
+            </div>
+
+            <div>
+              <strong>{programStats.speakersCount}</strong>
+              <span>учасників</span>
+            </div>
+          </div>
+        </article>
       </div>
 
       {error && <div className="programs-alert programs-alert--error">{error}</div>}
@@ -460,7 +562,11 @@ export default function ProgramDetailsPage() {
 
             <label>
               Назва доповіді
-              <input name="title" value={itemForm.title} onChange={handleItemChange} />
+              <input
+                name="title"
+                value={itemForm.title}
+                onChange={handleItemChange}
+              />
             </label>
 
             <div className="programs-form__grid">
