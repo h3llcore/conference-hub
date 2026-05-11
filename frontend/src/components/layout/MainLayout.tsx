@@ -12,8 +12,6 @@ import "../../styles/header-dropdown.css";
 import "../../styles/header-profile.css";
 
 const conferenceItems = [
-  { label: "Міжнародні конференції", to: "/" },
-  { label: "Всеукраїнські конференції", to: "/" },
   { label: "Програми конференцій", to: "/programs" },
   { label: "Збірники конференцій", to: "/issues" },
   { label: "Архів конференцій", to: "/programs/archive" },
