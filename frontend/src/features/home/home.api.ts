@@ -121,3 +121,13 @@ export async function apiSearchArticles(params: {
     `/api/home/search?${searchParams.toString()}`,
   );
 }
+
+export async function apiUpdateHomeContent(
+  id: string,
+  payload: CreateHomeContentPayload,
+) {
+  return http<{ item: HomeContent }>(`/api/home/admin/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}

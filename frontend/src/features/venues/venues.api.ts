@@ -4,6 +4,15 @@ function buildUrl(path: string) {
   return `${BASE_URL.replace(/\/$/, "")}/api/${path.replace(/^\//, "")}`;
 }
 
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 type GetVenuesParams = {
   type?: "JOURNAL" | "CONFERENCE";
   limit?: number;
@@ -28,6 +37,12 @@ export type CreateVenuePayload = {
   title: string;
   description: string;
   type: "JOURNAL" | "CONFERENCE";
+  deadline: string;
+};
+
+export type UpdateVenuePayload = {
+  title: string;
+  description: string;
   deadline: string;
 };
 
@@ -102,14 +117,9 @@ export async function getVenueById(id: string) {
 }
 
 export async function createVenue(payload: CreateVenuePayload) {
-  const token = localStorage.getItem("token");
-
   const res = await fetch(buildUrl("/venues"), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -123,6 +133,49 @@ export async function createVenue(payload: CreateVenuePayload) {
     }
 
     return data as { venue: Venue };
+  } catch {
+    throw new Error("Сервер повернув некоректну відповідь");
+  }
+}
+
+export async function updateVenue(id: string, payload: UpdateVenuePayload) {
+  const res = await fetch(buildUrl(`/venues/${id}`), {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+
+  try {
+    const data = JSON.parse(text);
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to update venue");
+    }
+
+    return data as { venue: Venue };
+  } catch {
+    throw new Error("Сервер повернув некоректну відповідь");
+  }
+}
+
+export async function deleteVenue(id: string) {
+  const res = await fetch(buildUrl(`/venues/${id}`), {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  const text = await res.text();
+
+  try {
+    const data = JSON.parse(text);
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to delete venue");
+    }
+
+    return data as { message: string };
   } catch {
     throw new Error("Сервер повернув некоректну відповідь");
   }

@@ -82,19 +82,77 @@ export async function createVenue(req: Request, res: Response) {
         type: true,
         deadline: true,
         createdAt: true,
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            role: true,
-          },
-        },
       },
     });
 
     return res.status(201).json({ venue });
   } catch (e) {
     console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function updateVenue(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const { title, description, deadline } = req.body as {
+      title?: string;
+      description?: string;
+      deadline?: string;
+    };
+
+    if (!title || !description || !deadline) {
+      return res.status(400).json({
+        message: "title, description and deadline are required",
+      });
+    }
+
+    const venue = await prisma.venue.update({
+      where: { id },
+      data: {
+        title: title.trim(),
+        description: description.trim(),
+        deadline: new Date(deadline),
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        type: true,
+        deadline: true,
+        createdAt: true,
+      },
+    });
+
+    return res.json({ venue });
+  } catch (e: any) {
+    console.error(e);
+
+    if (e.code === "P2025") {
+      return res.status(404).json({ message: "Venue not found" });
+    }
+
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function deleteVenue(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    await prisma.venue.delete({
+      where: { id },
+    });
+
+    return res.json({ message: "Venue deleted" });
+  } catch (e: any) {
+    console.error(e);
+
+    if (e.code === "P2025") {
+      return res.status(404).json({ message: "Venue not found" });
+    }
+
     return res.status(500).json({ message: "Server error" });
   }
 }

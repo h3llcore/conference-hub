@@ -129,3 +129,39 @@
   font-size: 14px;
   margin-top: 6px;
 }
+
+.committee-content-form__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.committee-content-form__cancel {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 700;
+}
+
+.committee-content-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.committee-content-card__edit {
+  background: #0f172a !important;
+}
+
+.committee-content-list__more {
+  margin-top: 14px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 800;
+}
