@@ -117,6 +117,17 @@ export default function CommitteeIssuesPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!error && !success) return;
+
+    const timer = window.setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 4500);
+
+    return () => window.clearTimeout(timer);
+  }, [error, success]);
+
   function handleChange(
     event: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -196,6 +207,7 @@ export default function CommitteeIssuesPage() {
         [issueId]: "",
       }));
 
+      setSuccess("Статтю додано до випуску / збірника.");
       await loadData();
     } catch (e: any) {
       setError(e.message || "Не вдалося додати статтю у випуск.");
@@ -212,6 +224,7 @@ export default function CommitteeIssuesPage() {
       setError("");
 
       await removeSubmissionFromIssue(submissionId);
+      setSuccess("Статтю прибрано з випуску / збірника.");
       await loadData();
     } catch (e: any) {
       setError(e.message || "Не вдалося прибрати статтю.");
@@ -228,6 +241,7 @@ export default function CommitteeIssuesPage() {
       setError("");
 
       await publishPublicationIssue(issueId);
+      setSuccess("Випуск / збірник опубліковано.");
       await loadData();
     } catch (e: any) {
       setError(e.message || "Не вдалося опублікувати випуск.");
@@ -244,6 +258,7 @@ export default function CommitteeIssuesPage() {
       setError("");
 
       await deletePublicationIssue(issueId);
+      setSuccess("Випуск / збірник видалено.");
       await loadData();
     } catch (e: any) {
       setError(e.message || "Не вдалося видалити випуск.");
@@ -436,7 +451,7 @@ export default function CommitteeIssuesPage() {
                           </span>
                         </div>
 
-                        {issue.status === "DRAFT" && (
+                        {issue.status !== "ARCHIVED" && (
                           <button
                             type="button"
                             disabled={actionLoadingId === submission.id}
@@ -452,7 +467,7 @@ export default function CommitteeIssuesPage() {
                   )}
                 </div>
 
-                {issue.status === "DRAFT" && (
+                {issue.status !== "ARCHIVED" && (
                   <div className="committee-issue-card__add">
                     <select
                       value={selectedSubmissions[issue.id] || ""}
