@@ -18,10 +18,7 @@ import {
   publishConferenceProgram,
   sendConferenceInvitations,
 } from "../features/programs/programs.api";
-import type {
-  AcceptedConferenceSubmission,
-  ConferenceProgram,
-} from "../types/programs.types";
+import type { AcceptedConferenceSubmission, ConferenceProgram } from "../types/programs.types";
 import { useAuth } from "../features/auth/AuthContext";
 import "../styles/programs.css";
 
@@ -96,9 +93,9 @@ export default function ProgramDetailsPage() {
   const { user } = useAuth();
 
   const [program, setProgram] = useState<ConferenceProgram | null>(null);
-  const [acceptedSubmissions, setAcceptedSubmissions] = useState<
-    AcceptedConferenceSubmission[]
-  >([]);
+  const [acceptedSubmissions, setAcceptedSubmissions] = useState<AcceptedConferenceSubmission[]>(
+    []
+  );
   const [sectionForm, setSectionForm] = useState<SectionForm>(emptySectionForm);
   const [itemForm, setItemForm] = useState<ItemForm>(emptyItemForm);
 
@@ -150,15 +147,12 @@ export default function ProgramDetailsPage() {
   const programStats = useMemo(() => {
     const sectionsCount = sortedSections.length;
 
-    const reportsCount = sortedSections.reduce(
-      (total, section) => total + section.items.length,
-      0,
-    );
+    const reportsCount = sortedSections.reduce((total, section) => total + section.items.length, 0);
 
     const speakersCount = new Set(
       sortedSections.flatMap((section) =>
-        section.items.map((item) => item.speakerEmail || item.speakerName),
-      ),
+        section.items.map((item) => item.speakerEmail || item.speakerName)
+      )
     ).size;
 
     return {
@@ -168,16 +162,12 @@ export default function ProgramDetailsPage() {
     };
   }, [sortedSections]);
 
-  function handleSectionChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) {
+  function handleSectionChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = event.target;
     setSectionForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  function handleItemChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) {
+  function handleItemChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target;
 
     setItemForm((prev) => {
@@ -231,11 +221,7 @@ export default function ProgramDetailsPage() {
   async function handleAddItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (
-      !itemForm.sectionId ||
-      !itemForm.title.trim() ||
-      !itemForm.speakerName.trim()
-    ) {
+    if (!itemForm.sectionId || !itemForm.title.trim() || !itemForm.speakerName.trim()) {
       setError("Оберіть секцію, вкажіть назву доповіді та доповідача.");
       return;
     }
@@ -300,7 +286,7 @@ export default function ProgramDetailsPage() {
     if (!id) return;
 
     const confirmed = window.confirm(
-      "Ви дійсно хочете завершити конференцію? Після цього вона буде показуватись в архіві.",
+      "Ви дійсно хочете завершити конференцію? Після цього вона буде показуватись в архіві."
     );
 
     if (!confirmed) return;
@@ -357,22 +343,14 @@ export default function ProgramDetailsPage() {
         {isCommittee && (
           <div className="program-details__actions">
             {program.status === "DRAFT" && (
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={actionLoading}
-              >
+              <button type="button" onClick={handlePublish} disabled={actionLoading}>
                 Опублікувати
               </button>
             )}
 
             {program.status === "PUBLISHED" && (
               <>
-                <button
-                  type="button"
-                  onClick={handleSendInvitations}
-                  disabled={actionLoading}
-                >
+                <button type="button" onClick={handleSendInvitations} disabled={actionLoading}>
                   <Send size={15} />
                   Надіслати запрошення
                 </button>
@@ -400,8 +378,7 @@ export default function ProgramDetailsPage() {
           <h2>Про конференцію</h2>
 
           <p>
-            {program.venue?.description ||
-              "Конференція призначена для представлення наукових результатів, обміну досвідом та обговорення актуальних досліджень."}
+            {program.description || program.venue?.description || "Опис конференції ще не додано."}
           </p>
         </article>
 
@@ -428,8 +405,8 @@ export default function ProgramDetailsPage() {
           <h2>Учасники та секції</h2>
 
           <p>
-            Програма конференції складається із тематичних секцій, у межах яких
-            розміщуються доповіді авторів та запрошених учасників.
+            Програма конференції складається із тематичних секцій, у межах яких розміщуються
+            доповіді авторів та запрошених учасників.
           </p>
         </article>
 
@@ -530,11 +507,7 @@ export default function ProgramDetailsPage() {
 
             <label>
               Секція
-              <select
-                name="sectionId"
-                value={itemForm.sectionId}
-                onChange={handleItemChange}
-              >
+              <select name="sectionId" value={itemForm.sectionId} onChange={handleItemChange}>
                 <option value="">Оберіть секцію</option>
                 {sortedSections.map((section) => (
                   <option key={section.id} value={section.id}>
@@ -546,11 +519,7 @@ export default function ProgramDetailsPage() {
 
             <label>
               Прийнята стаття
-              <select
-                name="submissionId"
-                value={itemForm.submissionId}
-                onChange={handleItemChange}
-              >
+              <select name="submissionId" value={itemForm.submissionId} onChange={handleItemChange}>
                 <option value="">Без прив’язки до статті</option>
                 {acceptedSubmissions.map((submission) => (
                   <option key={submission.id} value={submission.id}>
@@ -562,11 +531,7 @@ export default function ProgramDetailsPage() {
 
             <label>
               Назва доповіді
-              <input
-                name="title"
-                value={itemForm.title}
-                onChange={handleItemChange}
-              />
+              <input name="title" value={itemForm.title} onChange={handleItemChange} />
             </label>
 
             <div className="programs-form__grid">
@@ -651,9 +616,7 @@ export default function ProgramDetailsPage() {
                     .sort((a, b) => a.order - b.order)
                     .map((item) => (
                       <div key={item.id} className="program-item">
-                        <div className="program-item__time">
-                          {formatTime(item.startTime)}
-                        </div>
+                        <div className="program-item__time">{formatTime(item.startTime)}</div>
 
                         <div>
                           <h3>{item.title}</h3>
