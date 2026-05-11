@@ -18,7 +18,7 @@ function formatDate(date?: string | null) {
 }
 
 function getTypeLabel(type: string) {
-  if (type === "NEWS") return "Новина / оголошення";
+  if (type === "NEWS") return "Новини / оголошення";
   if (type === "JOURNAL") return "Науковий журнал";
   return "Контент";
 }

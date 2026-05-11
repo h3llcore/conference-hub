@@ -50,9 +50,15 @@ export async function createVenue(req: Request, res: Response) {
     };
 
     if (!title || !description || !type || !deadline) {
-      return res
-        .status(400)
-        .json({ message: "title, description, type, deadline are required" });
+      return res.status(400).json({
+        message: "title, description, type, deadline are required",
+      });
+    }
+
+    if (type !== "JOURNAL" && type !== "CONFERENCE") {
+      return res.status(400).json({
+        message: "Invalid venue type",
+      });
     }
 
     const payload = (req as any).user as { sub: string };

@@ -17,6 +17,18 @@ export type Venue = {
   type: "JOURNAL" | "CONFERENCE";
   deadline: string;
   createdAt: string;
+  rating?: number;
+  stats?: {
+    publishedIssues: number;
+    publishedArticles: number;
+  };
+};
+
+export type CreateVenuePayload = {
+  title: string;
+  description: string;
+  type: "JOURNAL" | "CONFERENCE";
+  deadline: string;
 };
 
 export type VenueDetails = Venue & {
@@ -84,6 +96,33 @@ export async function getVenueById(id: string) {
     }
 
     return data as { venue: VenueDetails };
+  } catch {
+    throw new Error("Сервер повернув некоректну відповідь");
+  }
+}
+
+export async function createVenue(payload: CreateVenuePayload) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(buildUrl("/venues"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+
+  try {
+    const data = JSON.parse(text);
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to create venue");
+    }
+
+    return data as { venue: Venue };
   } catch {
     throw new Error("Сервер повернув некоректну відповідь");
   }

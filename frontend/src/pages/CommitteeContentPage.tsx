@@ -6,15 +6,17 @@ import {
   type HomeContent,
   type HomeContentType,
 } from "../features/home/home.api";
+import { createVenue, getVenues, type Venue } from "../features/venues/venues.api";
 
 import "../styles/committee-content.css";
 
+type ContentKind = "NEWS" | "JOURNAL" | "CONFERENCE";
+
 type ContentForm = {
-  type: Exclude<HomeContentType, "ARTICLE">;
+  type: ContentKind;
   title: string;
   description: string;
-  linkUrl: string;
-  rating: string;
+  deadline: string;
   date: string;
 };
 
@@ -22,13 +24,13 @@ const initialForm: ContentForm = {
   type: "NEWS",
   title: "",
   description: "",
-  linkUrl: "",
-  rating: "",
+  deadline: "",
   date: "",
 };
 
 export default function CommitteeContentPage() {
   const [items, setItems] = useState<HomeContent[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<ContentForm>(initialForm);
   const [error, setError] = useState("");
@@ -36,29 +38,33 @@ export default function CommitteeContentPage() {
 
   const isNews = form.type === "NEWS";
   const isJournal = form.type === "JOURNAL";
+  const isConference = form.type === "CONFERENCE";
 
-  async function loadContent() {
+  async function loadData() {
     try {
       setLoading(true);
       setError("");
 
-      const data = await apiGetAdminHomeContent();
-      setItems(data.items || []);
+      const [contentData, venuesData] = await Promise.all([
+        apiGetAdminHomeContent(),
+        getVenues({ sort: "newest" }),
+      ]);
+
+      setItems(contentData.items || []);
+      setVenues(venuesData.venues || []);
     } catch (e: any) {
-      setError(e.message || "Не вдалося завантажити контент.");
+      setError(e.message || "Не вдалося завантажити дані.");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadContent();
+    loadData();
   }, []);
 
   function handleChange(
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) {
     const { name, value } = event.target;
 
@@ -66,7 +72,7 @@ export default function CommitteeContentPage() {
       if (name === "type") {
         return {
           ...initialForm,
-          type: value as Exclude<HomeContentType, "ARTICLE">,
+          type: value as ContentKind,
         };
       }
 
@@ -84,28 +90,48 @@ export default function CommitteeContentPage() {
     setSuccess("");
 
     if (!form.title.trim() || !form.description.trim()) {
-      setError("Заповніть заголовок та опис.");
+      setError("Заповніть назву та опис.");
       return;
     }
 
-    if (isJournal && !form.linkUrl.trim()) {
-      setError("Для журналу бажано вказати посилання на сторінку журналу.");
+    if ((isJournal || isConference) && !form.deadline) {
+      setError("Для журналу або конференції потрібно вказати дедлайн.");
+      return;
+    }
+
+    if (isNews && !form.date) {
+      setError("Для новини потрібно вказати дату.");
       return;
     }
 
     try {
-      await apiCreateHomeContent({
-        type: form.type,
-        title: form.title.trim(),
-        description: form.description.trim(),
-        linkUrl: isJournal ? form.linkUrl.trim() || undefined : undefined,
-        rating: isJournal && form.rating ? Number(form.rating) : undefined,
-        date: form.date || undefined,
-      });
+      if (isNews) {
+        await apiCreateHomeContent({
+          type: "NEWS",
+          title: form.title.trim(),
+          description: form.description.trim(),
+          date: form.date || undefined,
+          isPublished: true,
+        });
 
-      setSuccess("Контент успішно створено.");
+        setSuccess("Новину успішно створено.");
+      }
+
+      if (isJournal || isConference) {
+        await createVenue({
+          type: form.type as "JOURNAL" | "CONFERENCE",
+          title: form.title.trim(),
+          description: form.description.trim(),
+          deadline: form.deadline,
+        });
+
+        setSuccess(
+          isJournal ? "Науковий журнал успішно створено." : "Конференцію успішно створено."
+        );
+      }
+
       setForm(initialForm);
-      await loadContent();
+      await loadData();
     } catch (e: any) {
       setError(e.message || "Не вдалося створити запис.");
     }
@@ -118,7 +144,7 @@ export default function CommitteeContentPage() {
 
     try {
       await apiDeleteHomeContent(id);
-      await loadContent();
+      await loadData();
     } catch (e: any) {
       setError(e.message || "Не вдалося видалити запис.");
     }
@@ -130,49 +156,63 @@ export default function CommitteeContentPage() {
     return "Журнал";
   }
 
+  function getVenueTypeLabel(type: "JOURNAL" | "CONFERENCE") {
+    return type === "JOURNAL" ? "Науковий журнал" : "Конференція";
+  }
+
   return (
     <section className="committee-content-page">
       <div className="committee-content-page__container">
         <div className="committee-content-page__header">
-          <h1>Керування головною сторінкою</h1>
+          <h1>Керування контентом платформи</h1>
 
           <p>
-            Додавання новин та журналів для головної сторінки. Популярні статті
-            потрапляють на головну автоматично після публікації прийнятої роботи.
+            Створюйте новини, наукові журнали та конференції. Новини відображаються на головній
+            сторінці, а журнали й конференції додаються до загального каталогу платформи.
           </p>
         </div>
 
         <form className="committee-content-form" onSubmit={handleSubmit}>
-          {error && (
-            <div className="committee-content-form__error">{error}</div>
-          )}
+          {error && <div className="committee-content-form__error">{error}</div>}
 
-          {success && (
-            <div className="committee-content-form__success">{success}</div>
-          )}
+          {success && <div className="committee-content-form__success">{success}</div>}
 
           <div className="committee-content-form__grid">
             <label>
-              Тип контенту
+              Тип запису
               <select name="type" value={form.type} onChange={handleChange}>
                 <option value="NEWS">Новина</option>
                 <option value="JOURNAL">Науковий журнал</option>
+                <option value="CONFERENCE">Конференція</option>
               </select>
             </label>
 
-            <label>
-              Дата
-              <input
-                type="datetime-local"
-                name="date"
-                value={form.date}
-                onChange={handleChange}
-              />
-            </label>
+            {isNews ? (
+              <label>
+                Дата новини
+                <input
+                  type="datetime-local"
+                  name="date"
+                  value={form.date}
+                  onChange={handleChange}
+                />
+              </label>
+            ) : (
+              <label>
+                Дедлайн подання матеріалів
+                <input
+                  type="datetime-local"
+                  name="deadline"
+                  value={form.deadline}
+                  onChange={handleChange}
+                />
+              </label>
+            )}
           </div>
 
           <label>
-            {isNews ? "Заголовок новини" : "Назва журналу"}
+            {isNews ? "Заголовок новини" : isJournal ? "Назва журналу" : "Назва конференції"}
+
             <input
               name="title"
               value={form.title}
@@ -180,13 +220,16 @@ export default function CommitteeContentPage() {
               placeholder={
                 isNews
                   ? "Наприклад: Оновлено каталог конференцій"
-                  : "Наприклад: Journal of Digital Science"
+                  : isJournal
+                    ? "Наприклад: Journal of Digital Science"
+                    : "Наприклад: International Conference on AI 2026"
               }
             />
           </label>
 
           <label>
-            {isNews ? "Текст новини" : "Опис журналу"}
+            {isNews ? "Текст новини" : isJournal ? "Опис журналу" : "Опис конференції"}
+
             <textarea
               rows={5}
               name="description"
@@ -195,90 +238,83 @@ export default function CommitteeContentPage() {
               placeholder={
                 isNews
                   ? "Коротко опишіть новину або оголошення"
-                  : "Коротко опишіть журнал, напрям, умови подання"
+                  : isJournal
+                    ? "Коротко опишіть журнал, напрям, умови подання"
+                    : "Коротко опишіть конференцію, тематику, умови участі"
               }
             />
           </label>
 
-          {isJournal && (
-            <div className="committee-content-form__grid">
-              <label>
-                Рейтинг журналу
-                <input
-                  type="number"
-                  step="0.1"
-                  name="rating"
-                  value={form.rating}
-                  onChange={handleChange}
-                  placeholder="4.9"
-                />
-              </label>
-
-              <label>
-                Посилання на журнал
-                <input
-                  name="linkUrl"
-                  value={form.linkUrl}
-                  onChange={handleChange}
-                  placeholder="/journals або /journals/123"
-                />
-              </label>
-            </div>
-          )}
-
           <button type="submit" className="committee-content-form__submit">
-            Створити запис
+            {isNews ? "Створити новину" : isJournal ? "Створити журнал" : "Створити конференцію"}
           </button>
         </form>
 
         <div className="committee-content-list">
           {loading ? (
             <div className="committee-content-list__empty">Завантаження...</div>
-          ) : items.length === 0 ? (
-            <div className="committee-content-list__empty">
-              Контент поки відсутній
-            </div>
           ) : (
-            items.map((item) => (
-              <article key={item.id} className="committee-content-card">
-                <div className="committee-content-card__top">
-                  <span className="committee-content-card__type">
-                    {getTypeLabel(item.type)}
-                  </span>
+            <>
+              <div className="committee-content-section">
+                <h2>Новини та оголошення</h2>
 
-                  <button type="button" onClick={() => handleDelete(item.id)}>
-                    Видалити
-                  </button>
-                </div>
+                {items.length === 0 ? (
+                  <div className="committee-content-list__empty">Новин поки немає</div>
+                ) : (
+                  items.map((item) => (
+                    <article key={item.id} className="committee-content-card">
+                      <div className="committee-content-card__top">
+                        <span className="committee-content-card__type">
+                          {getTypeLabel(item.type)}
+                        </span>
 
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
+                        <button type="button" onClick={() => handleDelete(item.id)}>
+                          Видалити
+                        </button>
+                      </div>
 
-                {item.authorName && (
-                  <span className="committee-content-card__meta">
-                    Автор: {item.authorName}
-                  </span>
+                      <h3>{item.title}</h3>
+
+                      <p>{item.description}</p>
+
+                      {item.date && (
+                        <span className="committee-content-card__meta">
+                          {new Date(item.date).toLocaleString("uk-UA")}
+                        </span>
+                      )}
+                    </article>
+                  ))
                 )}
+              </div>
 
-                {item.rating && (
-                  <span className="committee-content-card__meta">
-                    Рейтинг: {item.rating}
-                  </span>
-                )}
+              <div className="committee-content-section">
+                <h2>Журнали та конференції</h2>
 
-                {item.linkUrl && (
-                  <span className="committee-content-card__meta">
-                    Посилання: {item.linkUrl}
-                  </span>
-                )}
+                {venues.length === 0 ? (
+                  <div className="committee-content-list__empty">
+                    Журналів і конференцій поки немає
+                  </div>
+                ) : (
+                  venues.map((venue) => (
+                    <article key={venue.id} className="committee-content-card">
+                      <div className="committee-content-card__top">
+                        <span className="committee-content-card__type">
+                          {getVenueTypeLabel(venue.type)}
+                        </span>
+                      </div>
 
-                {item.date && (
-                  <span className="committee-content-card__meta">
-                    {new Date(item.date).toLocaleString("uk-UA")}
-                  </span>
+                      <h3>{venue.title}</h3>
+
+                      <p>{venue.description}</p>
+
+                      <span className="committee-content-card__meta">
+                        Дедлайн: {new Date(venue.deadline).toLocaleString("uk-UA")}
+                      </span>
+                    </article>
+                  ))
                 )}
-              </article>
-            ))
+              </div>
+            </>
           )}
         </div>
       </div>
