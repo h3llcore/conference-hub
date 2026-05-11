@@ -43,6 +43,33 @@
   max-width: 760px;
 }
 
+.journals-page__back {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.journals-page__back:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.journals-page__back-arrow {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .journals-page__search {
   max-width: 1280px;
   margin: 0 auto 24px;
@@ -85,6 +112,22 @@
   border-radius: 24px;
   padding: 22px;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.journals-page__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.journals-page__card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .journals-page__card h2 {
@@ -100,15 +143,27 @@
   color: #4f46e5;
 }
 
+.journals-page__rating {
+  min-width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
 .journals-page__description-text {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 14px;
   line-height: 1.7;
   color: #475569;
 }
 
 .journals-page__deadline {
-  margin: 0;
+  margin: 18px 0 0;
   font-size: 13px;
   color: #64748b;
 }
@@ -147,31 +202,4 @@
   .journals-page__title {
     font-size: 28px;
   }
-}
-
-.journals-page__back {
-  margin-top: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  color: #334155;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.journals-page__back:hover {
-  background: #f8fafc;
-  color: #0f172a;
-}
-
-.journals-page__back-arrow {
-  font-size: 16px;
-  line-height: 1;
 }

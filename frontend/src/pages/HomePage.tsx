@@ -26,10 +26,6 @@ type Venue = {
   type: "JOURNAL" | "CONFERENCE";
   deadline?: string;
   rating?: number;
-  stats?: {
-    publishedIssues: number;
-    publishedArticles: number;
-  };
 };
 
 function formatDate(date?: string | null) {
@@ -351,10 +347,7 @@ export default function HomePage() {
                   >
                     <div>
                       <h3>{journal.title}</h3>
-                      <p>
-                        Статей: {journal.stats?.publishedArticles ?? 0} ·
-                        Випусків: {journal.stats?.publishedIssues ?? 0}
-                      </p>
+                      <p>Наукове видання</p>
                     </div>
 
                     <span>{formatRating(journal.rating)}</span>

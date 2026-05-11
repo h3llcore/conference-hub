@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { getVenues } from "../features/venues/venues.api";
-import { useNavigate } from "react-router-dom";
 import "../styles/journals.css";
 
 type Venue = {
@@ -10,13 +10,33 @@ type Venue = {
   description?: string;
   type: "JOURNAL" | "CONFERENCE";
   deadline?: string;
+  rating?: number;
 };
+
+function formatDate(date?: string | null) {
+  if (!date) return "Не вказано";
+
+  return new Date(date).toLocaleDateString("uk-UA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function formatRating(value?: number) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "0.0";
+  }
+
+  return value.toFixed(1);
+}
 
 export default function JournalsPage() {
   const [journals, setJournals] = useState<Venue[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,7 +90,9 @@ export default function JournalsPage() {
     <section className="journals-page">
       <div className="journals-page__hero">
         <p className="journals-page__eyebrow">Каталог журналів</p>
+
         <h1 className="journals-page__title">Пошук наукових журналів</h1>
+
         <p className="journals-page__description">
           Знайдіть журнал за назвою або коротким описом і перегляньте доступні
           видання для подання матеріалів.
@@ -89,6 +111,7 @@ export default function JournalsPage() {
       <div className="journals-page__search">
         <div className="journals-page__search-box">
           <Search size={18} />
+
           <input
             type="text"
             placeholder="Введіть назву журналу"
@@ -118,10 +141,21 @@ export default function JournalsPage() {
         {!loading && !error && filteredJournals.length > 0 && (
           <div className="journals-page__grid">
             {filteredJournals.map((journal) => (
-              <article key={journal.id} className="journals-page__card">
-                <h2>{journal.title}</h2>
+              <Link
+                key={journal.id}
+                to={`/journals/${journal.id}`}
+                className="journals-page__card"
+              >
+                <div className="journals-page__card-top">
+                  <div>
+                    <h2>{journal.title}</h2>
+                    <p className="journals-page__type">Науковий журнал</p>
+                  </div>
 
-                <p className="journals-page__type">Науковий журнал</p>
+                  <span className="journals-page__rating">
+                    {formatRating(journal.rating)}
+                  </span>
+                </div>
 
                 <p className="journals-page__description-text">
                   {journal.description || "Опис журналу поки що не додано."}
@@ -129,11 +163,10 @@ export default function JournalsPage() {
 
                 {journal.deadline && (
                   <p className="journals-page__deadline">
-                    Дедлайн:{" "}
-                    {new Date(journal.deadline).toLocaleDateString("uk-UA")}
+                    Дедлайн: {formatDate(journal.deadline)}
                   </p>
                 )}
-              </article>
+              </Link>
             ))}
           </div>
         )}
