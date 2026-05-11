@@ -1,10 +1,21 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { CalendarDays, SlidersHorizontal } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  FileText,
+  LibraryBig,
+  RotateCcw,
+  SlidersHorizontal,
+  UsersRound,
+} from "lucide-react";
 import { getVenues } from "../features/venues/venues.api";
 import {
   apiGetHomeContent,
+  apiGetHomeStats,
+  apiSearchArticles,
   type HomeContent,
+  type HomeStats,
 } from "../features/home/home.api";
 import "../styles/home.css";
 
@@ -26,13 +37,52 @@ function formatDate(date?: string | null) {
   });
 }
 
+const emptyStats: HomeStats = {
+  articles: 0,
+  conferences: 0,
+  journals: 0,
+  users: 0,
+  reviewers: 0,
+  publicationIssues: 0,
+};
+
 export default function HomePage() {
   const [latestJournals, setLatestJournals] = useState<Venue[]>([]);
   const [popularArticles, setPopularArticles] = useState<HomeContent[]>([]);
   const [newsItems, setNewsItems] = useState<HomeContent[]>([]);
+  const [stats, setStats] = useState<HomeStats>(emptyStats);
+
+  const [authorSearch, setAuthorSearch] = useState("");
+  const [querySearch, setQuerySearch] = useState("");
+  const [isSearchMode, setIsSearchMode] = useState(false);
 
   const [loadingJournals, setLoadingJournals] = useState(true);
   const [loadingHomeContent, setLoadingHomeContent] = useState(true);
+  const [searching, setSearching] = useState(false);
+
+  async function loadHomeContent(isMounted = true) {
+    try {
+      setLoadingHomeContent(true);
+
+      const data = await apiGetHomeContent();
+
+      if (isMounted) {
+        setPopularArticles(data.articles || []);
+        setNewsItems(data.news || []);
+      }
+    } catch (e) {
+      console.error(e);
+
+      if (isMounted) {
+        setPopularArticles([]);
+        setNewsItems([]);
+      }
+    } finally {
+      if (isMounted) {
+        setLoadingHomeContent(false);
+      }
+    }
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -63,37 +113,71 @@ export default function HomePage() {
       }
     }
 
-    async function loadHomeContent() {
+    async function loadStats() {
       try {
-        setLoadingHomeContent(true);
-
-        const data = await apiGetHomeContent();
+        const data = await apiGetHomeStats();
 
         if (isMounted) {
-          setPopularArticles(data.articles || []);
-          setNewsItems(data.news || []);
+          setStats(data.stats || emptyStats);
         }
       } catch (e) {
         console.error(e);
 
         if (isMounted) {
-          setPopularArticles([]);
-          setNewsItems([]);
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingHomeContent(false);
+          setStats(emptyStats);
         }
       }
     }
 
     loadLatestJournals();
-    loadHomeContent();
+    loadHomeContent(isMounted);
+    loadStats();
 
     return () => {
       isMounted = false;
     };
   }, []);
+
+  async function handleSearch() {
+    const hasSearch = authorSearch.trim() || querySearch.trim();
+
+    if (!hasSearch) {
+      await handleResetSearch();
+      return;
+    }
+
+    try {
+      setSearching(true);
+      setLoadingHomeContent(true);
+      setIsSearchMode(true);
+
+      const data = await apiSearchArticles({
+        query: querySearch.trim(),
+        author: authorSearch.trim(),
+      });
+
+      setPopularArticles(data.articles || []);
+    } catch (e) {
+      console.error(e);
+      setPopularArticles([]);
+    } finally {
+      setSearching(false);
+      setLoadingHomeContent(false);
+    }
+  }
+
+  async function handleResetSearch() {
+    setAuthorSearch("");
+    setQuerySearch("");
+    setIsSearchMode(false);
+    await loadHomeContent(true);
+  }
+
+  function handleSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      handleSearch();
+    }
+  }
 
   return (
     <section className="home-page">
@@ -128,13 +212,63 @@ export default function HomePage() {
         </div>
       </div>
 
+      <div className="home-stats">
+        <div className="home-stat-card">
+          <div className="home-stat-card__icon">
+            <FileText size={20} />
+          </div>
+
+          <div>
+            <strong>{stats.articles}</strong>
+            <span>Опублікованих статей</span>
+          </div>
+        </div>
+
+        <div className="home-stat-card">
+          <div className="home-stat-card__icon">
+            <BookOpen size={20} />
+          </div>
+
+          <div>
+            <strong>{stats.conferences}</strong>
+            <span>Конференцій</span>
+          </div>
+        </div>
+
+        <div className="home-stat-card">
+          <div className="home-stat-card__icon">
+            <LibraryBig size={20} />
+          </div>
+
+          <div>
+            <strong>{stats.journals}</strong>
+            <span>Наукових журналів</span>
+          </div>
+        </div>
+
+        <div className="home-stat-card">
+          <div className="home-stat-card__icon">
+            <UsersRound size={20} />
+          </div>
+
+          <div>
+            <strong>{stats.users}</strong>
+            <span>Користувачів платформи</span>
+          </div>
+        </div>
+      </div>
+
       <div className="home-search">
         <div className="home-search__grid">
           <div className="home-search__field">
             <label htmlFor="author-search">Пошук за автором або напрямком</label>
+
             <input
               id="author-search"
               type="text"
+              value={authorSearch}
+              onChange={(event) => setAuthorSearch(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Введіть автора або науковий напрям"
             />
           </div>
@@ -143,21 +277,37 @@ export default function HomePage() {
             <label htmlFor="article-search">
               Пошук за назвою або ключовими словами
             </label>
+
             <input
               id="article-search"
               type="text"
+              value={querySearch}
+              onChange={(event) => setQuerySearch(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Введіть назву статті або ключові слова"
             />
           </div>
 
           <div className="home-search__actions">
-            <button type="button" className="home-search__filter">
-              <SlidersHorizontal size={16} />
-              <span>Фільтри</span>
-            </button>
+            {isSearchMode && (
+              <button
+                type="button"
+                className="home-search__filter"
+                onClick={handleResetSearch}
+              >
+                <RotateCcw size={16} />
+                <span>Скинути</span>
+              </button>
+            )}
 
-            <button type="button" className="home-search__button">
-              Пошук
+            <button
+              type="button"
+              className="home-search__button"
+              onClick={handleSearch}
+              disabled={searching}
+            >
+              <SlidersHorizontal size={16} />
+              <span>{searching ? "Пошук..." : "Пошук"}</span>
             </button>
           </div>
         </div>
@@ -168,7 +318,7 @@ export default function HomePage() {
           <div className="home-section-card">
             <div className="home-section-card__header">
               <h2>Доступні журнали</h2>
-              <button type="button">Фільтри</button>
+              <Link to="/journals">Усі журнали</Link>
             </div>
 
             <div className="home-journals">
@@ -197,15 +347,21 @@ export default function HomePage() {
         <main className="home-main">
           <div className="home-section-card">
             <div className="home-section-card__header">
-              <h2>Популярні статті</h2>
+              <h2>{isSearchMode ? "Результати пошуку" : "Популярні статті"}</h2>
               <Link to="/journals">Дивитися всі</Link>
             </div>
 
             <div className="home-articles">
-              {loadingHomeContent && <div>Завантаження статей...</div>}
+              {loadingHomeContent && (
+                <div>{isSearchMode ? "Пошук статей..." : "Завантаження статей..."}</div>
+              )}
 
               {!loadingHomeContent && popularArticles.length === 0 && (
-                <div>Популярних статей поки немає.</div>
+                <div>
+                  {isSearchMode
+                    ? "За вашим запитом статей не знайдено."
+                    : "Популярних статей поки немає."}
+                </div>
               )}
 
               {!loadingHomeContent &&

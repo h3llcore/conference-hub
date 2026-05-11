@@ -16,6 +16,15 @@ export type HomeContent = {
   createdAt: string;
 };
 
+export type HomeStats = {
+  articles: number;
+  conferences: number;
+  journals: number;
+  users: number;
+  reviewers: number;
+  publicationIssues: number;
+};
+
 export type CreateHomeContentPayload = {
   type: HomeContentType;
   title: string;
@@ -65,6 +74,10 @@ export async function apiGetHomeContent() {
   }>("/api/home");
 }
 
+export async function apiGetHomeStats() {
+  return http<{ stats: HomeStats }>("/api/home/stats");
+}
+
 export async function apiGetHomeContentById(id: string) {
   return http<{ item: HomeContent }>(`/api/home/content/${id}`);
 }
@@ -88,4 +101,23 @@ export async function apiDeleteHomeContent(id: string) {
   return http<{ message: string }>(`/api/home/admin/${id}`, {
     method: "DELETE",
   });
+}
+
+export async function apiSearchArticles(params: {
+  query?: string;
+  author?: string;
+}) {
+  const searchParams = new URLSearchParams();
+
+  if (params.query) {
+    searchParams.set("q", params.query);
+  }
+
+  if (params.author) {
+    searchParams.set("author", params.author);
+  }
+
+  return http<{ articles: HomeContent[] }>(
+    `/api/home/search?${searchParams.toString()}`,
+  );
 }

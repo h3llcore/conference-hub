@@ -5,9 +5,11 @@ import {
   deleteHomeContent,
   getAllHomeContent,
   getHomeContentById,
+  getHomeStats,
   getPublishedArticleById,
   getPublishedHomeContent,
   updateHomeContent,
+  searchPublishedArticles,
 } from "./home.service.js";
 
 export async function getPublishedHomeContentHandler(
@@ -17,6 +19,35 @@ export async function getPublishedHomeContentHandler(
   try {
     const data = await getPublishedHomeContent();
     return res.json(data);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function getHomeStatsHandler(req: Request, res: Response) {
+  try {
+    const stats = await getHomeStats();
+    return res.json({ stats });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function searchPublishedArticlesHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { q, author } = req.query;
+
+    const articles = await searchPublishedArticles({
+      query: typeof q === "string" ? q : "",
+      author: typeof author === "string" ? author : "",
+    });
+
+    return res.json({ articles });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: "Server error" });

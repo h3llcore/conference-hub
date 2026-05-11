@@ -1,4 +1,4 @@
-import { HomeContentType } from "@prisma/client";
+import { HomeContentType, VenueType } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
 
 type CreateHomeContentDto = {
@@ -57,6 +57,58 @@ export async function getPublishedHomeContent() {
     })),
 
     news: items.filter((item) => item.type === "NEWS"),
+  };
+}
+
+export async function getHomeStats() {
+  const [
+    publishedArticles,
+    conferences,
+    journals,
+    users,
+    reviewers,
+    publicationIssues,
+  ] = await Promise.all([
+    prisma.submission.count({
+      where: {
+        status: "PUBLISHED",
+      },
+    }),
+
+    prisma.venue.count({
+      where: {
+        type: VenueType.CONFERENCE,
+      },
+    }),
+
+    prisma.venue.count({
+      where: {
+        type: VenueType.JOURNAL,
+      },
+    }),
+
+    prisma.user.count(),
+
+    prisma.user.count({
+      where: {
+        role: "REVIEWER",
+      },
+    }),
+
+    prisma.publicationIssue.count({
+      where: {
+        status: "PUBLISHED",
+      },
+    }),
+  ]);
+
+  return {
+    articles: publishedArticles,
+    conferences,
+    journals,
+    users,
+    reviewers,
+    publicationIssues,
   };
 }
 
@@ -160,4 +212,72 @@ export async function deleteHomeContent(id: string) {
   return prisma.homeContent.delete({
     where: { id },
   });
+}
+
+export async function searchPublishedArticles(params: {
+  query?: string;
+  author?: string;
+}) {
+  const query = params.query?.trim();
+  const author = params.author?.trim();
+
+  const submissions = await prisma.submission.findMany({
+    where: {
+      status: "PUBLISHED",
+
+      AND: [
+        query
+          ? {
+              OR: [
+                { title: { contains: query, mode: "insensitive" } },
+                { abstract: { contains: query, mode: "insensitive" } },
+                { keywords: { contains: query, mode: "insensitive" } },
+                { venue: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : {},
+
+        author
+          ? {
+              author: {
+                OR: [
+                  { firstName: { contains: author, mode: "insensitive" } },
+                  { lastName: { contains: author, mode: "insensitive" } },
+                  { institution: { contains: author, mode: "insensitive" } },
+                ],
+              },
+            }
+          : {},
+      ],
+    },
+
+    orderBy: {
+      finalDecisionAt: "desc",
+    },
+
+    include: {
+      author: {
+        select: {
+          firstName: true,
+          lastName: true,
+          institution: true,
+        },
+      },
+    },
+  });
+
+  return submissions.map((item) => ({
+    id: item.id,
+    type: "ARTICLE",
+    title: item.title,
+    description: item.abstract,
+    authorName: item.author
+      ? `${item.author.firstName} ${item.author.lastName}`
+      : "Анонім",
+    institution: item.author?.institution || null,
+    keywords: item.keywords,
+    venue: item.venue,
+    date: item.finalDecisionAt || item.createdAt,
+    createdAt: item.createdAt,
+  }));
 }

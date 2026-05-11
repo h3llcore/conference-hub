@@ -4,9 +4,11 @@ import {
   deleteHomeContentHandler,
   getAllHomeContentHandler,
   getHomeContentByIdHandler,
+  getHomeStatsHandler,
   getPublishedArticleByIdHandler,
   getPublishedHomeContentHandler,
   updateHomeContentHandler,
+  searchPublishedArticlesHandler,
 } from "./home.controller.js";
 import { requireAuth } from "../../middlewares/auth.js";
 import { requireRole } from "../../middlewares/requireRole.js";
@@ -14,6 +16,10 @@ import { requireRole } from "../../middlewares/requireRole.js";
 const router = Router();
 
 router.get("/", getPublishedHomeContentHandler);
+
+router.get("/stats", getHomeStatsHandler);
+
+router.get("/search", searchPublishedArticlesHandler);
 
 router.get("/content/:id", getHomeContentByIdHandler);
 
