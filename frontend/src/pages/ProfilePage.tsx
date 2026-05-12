@@ -1,62 +1,131 @@
-import { useEffect, useState } from "react";
-import { CheckCircle2, ExternalLink, LinkIcon, ShieldCheck } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, ExternalLink, Plus, Send, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+  createConferenceProgram,
+  getConferencePrograms,
+  publishConferenceProgram,
+  sendConferenceInvitations,
+} from "../features/programs/programs.api";
+import { getVenues } from "../features/venues/venues.api";
+import type { ConferenceProgram } from "../types/programs.types";
 import { useAuth } from "../features/auth/AuthContext";
-import type { ProfilePayload } from "../types/auth.types";
-import "../styles/profile.css";
+import "../styles/programs.css";
 
-const emptyProfile: ProfilePayload = {
-  firstName: "",
-  lastName: "",
-  institution: "",
-  country: "",
-  academicDegree: "",
-  academicTitle: "",
-  orcid: "",
-  googleScholarUrl: "",
-  bio: "",
+type ProgramForm = {
+  venueId: string;
+  title: string;
+  description: string;
+  meetingUrl: string;
+  startDate: string;
+  endDate: string;
 };
 
-export default function ProfilePage() {
-  const { user, updateProfile, connectOrcid } = useAuth();
-  const [params] = useSearchParams();
+type ConferenceOption = {
+  id: string;
+  title: string;
+};
 
-  const [form, setForm] = useState<ProfilePayload>(emptyProfile);
+const emptyForm: ProgramForm = {
+  venueId: "",
+  title: "",
+  description: "",
+  meetingUrl: "",
+  startDate: "",
+  endDate: "",
+};
+
+function formatDate(date?: string | null) {
+  if (!date) return "Не вказано";
+
+  return new Date(date).toLocaleString("uk-UA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function getStatusLabel(status: string) {
+  if (status === "PUBLISHED") return "Опубліковано";
+  if (status === "FINISHED") return "Завершено";
+  if (status === "ARCHIVED") return "В архіві";
+  return "Чернетка";
+}
+
+export default function ProgramsPage() {
+  const { user } = useAuth();
+
+  const [programs, setPrograms] = useState<ConferenceProgram[]>([]);
+  const [conferences, setConferences] = useState<ConferenceOption[]>([]);
+  const [form, setForm] = useState<ProgramForm>(emptyForm);
+
+  const [loading, setLoading] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState("");
+  const [creating, setCreating] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [orcidLoading, setOrcidLoading] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
+  const isCommittee = user?.role === "COMMITTEE";
 
-    setForm({
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
-      institution: user.institution || "",
-      country: user.country || "",
-      academicDegree: user.academicDegree || "",
-      academicTitle: user.academicTitle || "",
-      orcid: user.orcid || "",
-      googleScholarUrl: user.googleScholarUrl || "",
-      bio: user.bio || "",
+  const activePrograms = useMemo(() => {
+    return programs.filter((program) => {
+      if (program.status === "FINISHED" || program.status === "ARCHIVED") {
+        return false;
+      }
+
+      if (program.endDate && new Date(program.endDate) < new Date()) {
+        return false;
+      }
+
+      return true;
     });
-  }, [user]);
+  }, [programs]);
+
+  async function loadPrograms() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [programsData, conferencesData] = await Promise.all([
+        getConferencePrograms(),
+        getVenues({
+          type: "CONFERENCE",
+          limit: 100,
+          sort: "newest",
+        }),
+      ]);
+
+      setPrograms(programsData.programs || []);
+      setConferences(conferencesData.venues || []);
+    } catch (e: any) {
+      setError(e.message || "Не вдалося завантажити програми конференцій.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    const orcidStatus = params.get("orcid");
+    loadPrograms();
+  }, []);
 
-    if (orcidStatus === "connected") {
-      setSuccess("ORCID успішно підключено та підтверджено.");
-    }
+  useEffect(() => {
+    if (!error && !success) return;
 
-    if (orcidStatus === "already_connected") {
-      setError("Цей ORCID уже підключено до іншого користувача.");
-    }
-  }, [params]);
+    const timer = window.setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [error, success]);
 
   function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) {
     const { name, value } = event.target;
 
@@ -66,233 +135,248 @@ export default function ProfilePage() {
     }));
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError("");
     setSuccess("");
 
-    if (
-      !form.firstName.trim() ||
-      !form.lastName.trim() ||
-      !form.institution.trim() ||
-      !form.country.trim()
-    ) {
-      setError("Заповніть ім’я, прізвище, установу та країну.");
-      return;
-    }
-
-    if (
-      form.orcid?.trim() &&
-      !/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/i.test(
-        form.orcid.replace("https://orcid.org/", "").trim(),
-      )
-    ) {
-      setError("ORCID потрібно ввести у форматі 0000-0000-0000-0000.");
+    if (!form.venueId || !form.title.trim() || !form.startDate) {
+      setError("Оберіть конференцію, вкажіть назву програми та дату початку.");
       return;
     }
 
     try {
-      setLoading(true);
+      setCreating(true);
 
-      await updateProfile({
-        ...form,
-        orcid: form.orcid?.replace("https://orcid.org/", "").trim() || "",
+      await createConferenceProgram({
+        venueId: form.venueId,
+        title: form.title.trim(),
+        description: form.description.trim() || undefined,
+        meetingUrl: form.meetingUrl.trim() || undefined,
+        startDate: form.startDate,
+        endDate: form.endDate || undefined,
       });
 
-      setSuccess("Профіль успішно оновлено.");
+      setForm(emptyForm);
+      setSuccess("Програму конференції успішно створено.");
+      await loadPrograms();
     } catch (e: any) {
-      setError(e.message || "Не вдалося оновити профіль.");
+      setError(e.message || "Не вдалося створити програму.");
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   }
 
-  async function handleConnectOrcid() {
+  async function handlePublish(programId: string) {
     try {
-      setOrcidLoading(true);
+      setActionLoadingId(programId);
       setError("");
-      await connectOrcid();
+      setSuccess("");
+
+      await publishConferenceProgram(programId);
+
+      setSuccess("Програму конференції опубліковано.");
+      await loadPrograms();
     } catch (e: any) {
-      setError(e.message || "Не вдалося підключити ORCID.");
-      setOrcidLoading(false);
+      setError(e.message || "Не вдалося опублікувати програму.");
+    } finally {
+      setActionLoadingId("");
     }
   }
 
-  const cleanOrcid = form.orcid?.replace("https://orcid.org/", "").trim();
-  const orcidUrl = cleanOrcid ? `https://orcid.org/${cleanOrcid}` : "";
+  async function handleSendInvitations(programId: string) {
+    try {
+      setActionLoadingId(programId);
+      setError("");
+      setSuccess("");
+
+      await sendConferenceInvitations(programId);
+
+      setSuccess("Запрошення авторам успішно надіслано.");
+      await loadPrograms();
+    } catch (e: any) {
+      setError(e.message || "Не вдалося надіслати запрошення.");
+    } finally {
+      setActionLoadingId("");
+    }
+  }
 
   return (
-    <section className="profile-page">
-      <div className="profile-card">
-        <div className="profile-card__header">
-          <div>
-            <h1>Профіль користувача</h1>
-            <p>
-              Особисті та наукові дані автора, рецензента або члена
-              оргкомітету.
-            </p>
-          </div>
+    <section className="programs-page">
+      <div className="programs-page__header">
+        <div>
+          <p className="programs-page__eyebrow">Conference Hub</p>
 
-          {user && <span className="profile-card__role">{user.role}</span>}
+          <h1>Програми конференцій</h1>
+
+          <p>
+            Тут можна переглядати програму конференції, розклад доповідей,
+            секції, посилання на онлайн-зустріч та запрошення авторам.
+          </p>
         </div>
+      </div>
 
-        <form className="profile-form" onSubmit={handleSubmit}>
-          {error && <div className="profile-form__error">{error}</div>}
-          {success && <div className="profile-form__success">{success}</div>}
+      {error && <div className="programs-alert programs-alert--error">{error}</div>}
 
-          <div className="profile-form__row">
-            <label>
-              Ім’я
-              <input
-                name="firstName"
-                value={form.firstName}
-                onChange={handleChange}
-              />
-            </label>
+      {success && (
+        <div className="programs-alert programs-alert--success">{success}</div>
+      )}
 
-            <label>
-              Прізвище
-              <input
-                name="lastName"
-                value={form.lastName}
-                onChange={handleChange}
-              />
-            </label>
+      {isCommittee && (
+        <form className="programs-form" onSubmit={handleCreate}>
+          <div className="programs-form__title">
+            <Plus size={18} />
+            <h2>Створити програму конференції</h2>
           </div>
 
-          <div className="profile-form__row">
+          <div className="programs-form__grid">
             <label>
-              Наукова установа
+              Конференція
+              <select
+                name="venueId"
+                value={form.venueId}
+                onChange={handleChange}
+              >
+                <option value="">Оберіть конференцію</option>
+
+                {conferences.map((conference) => (
+                  <option key={conference.id} value={conference.id}>
+                    {conference.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Назва програми
               <input
-                name="institution"
-                value={form.institution}
+                name="title"
+                value={form.title}
+                onChange={handleChange}
+                placeholder="Наприклад: Програма конференції 2026"
+              />
+            </label>
+
+            <label>
+              Початок
+              <input
+                type="datetime-local"
+                name="startDate"
+                value={form.startDate}
                 onChange={handleChange}
               />
             </label>
 
             <label>
-              Країна
+              Завершення
               <input
-                name="country"
-                value={form.country}
+                type="datetime-local"
+                name="endDate"
+                value={form.endDate}
                 onChange={handleChange}
-              />
-            </label>
-          </div>
-
-          <div className="profile-form__row">
-            <label>
-              Науковий ступінь
-              <input
-                name="academicDegree"
-                value={form.academicDegree}
-                onChange={handleChange}
-                placeholder="доктор філософії, канд. наук тощо"
               />
             </label>
 
             <label>
-              Вчене звання
+              Посилання на зустріч
               <input
-                name="academicTitle"
-                value={form.academicTitle}
+                name="meetingUrl"
+                value={form.meetingUrl}
                 onChange={handleChange}
-                placeholder="доцент, професор тощо"
+                placeholder="https://meet.google.com/..."
               />
-            </label>
-          </div>
-
-          <div className="profile-form__row">
-            <label>
-              ORCID iD
-              <input
-                name="orcid"
-                value={form.orcid}
-                onChange={handleChange}
-                placeholder="0000-0000-0000-0000"
-              />
-
-              <div className="profile-form__links">
-                {orcidUrl && (
-                  <a
-                    className="profile-form__link"
-                    href={orcidUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Переглянути ORCID <ExternalLink size={14} />
-                  </a>
-                )}
-
-                {user?.orcidVerified && (
-                  <span className="profile-form__verified">
-                    <CheckCircle2 size={14} />
-                    ORCID підтверджено
-                  </span>
-                )}
-              </div>
-            </label>
-
-            <label>
-              Google Scholar
-              <input
-                name="googleScholarUrl"
-                value={form.googleScholarUrl}
-                onChange={handleChange}
-                placeholder="https://scholar.google.com/citations?user=..."
-              />
-
-              {form.googleScholarUrl && (
-                <a
-                  className="profile-form__link"
-                  href={form.googleScholarUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Переглянути профіль <ExternalLink size={14} />
-                </a>
-              )}
             </label>
           </div>
 
           <label>
-            Наукові інтереси / коротка інформація
+            Опис
             <textarea
-              name="bio"
-              rows={4}
-              value={form.bio}
+              name="description"
+              value={form.description}
               onChange={handleChange}
-              placeholder="Коротко опишіть напрям досліджень"
+              placeholder="Короткий опис програми конференції"
+              rows={3}
             />
           </label>
 
-          <div className="profile-form__actions">
-            <button
-              className="profile-form__submit"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? "Збереження..." : "Зберегти профіль"}
-            </button>
-
-            <button
-              className="profile-form__orcid"
-              type="button"
-              disabled={orcidLoading}
-              onClick={handleConnectOrcid}
-            >
-              <ShieldCheck size={16} />
-              {orcidLoading ? "Переадресація..." : "Підключити ORCID"}
-            </button>
-          </div>
+          <button type="submit" disabled={creating}>
+            {creating ? "Створення..." : "Створити програму"}
+          </button>
         </form>
+      )}
 
-        <div className="profile-card__note">
-          <LinkIcon size={17} />
-          ORCID можна ввести вручну або підтвердити через офіційний OAuth-вхід.
+      {loading ? (
+        <div className="programs-empty">Завантаження...</div>
+      ) : activePrograms.length === 0 ? (
+        <div className="programs-empty">
+          Активних програм конференцій поки немає.
         </div>
-      </div>
+      ) : (
+        <div className="programs-list">
+          {activePrograms.map((program) => (
+            <article key={program.id} className="program-card">
+              <div className="program-card__top">
+                <div>
+                  <span
+                    className={`program-card__status program-card__status--${program.status.toLowerCase()}`}
+                  >
+                    {getStatusLabel(program.status)}
+                  </span>
+
+                  <h2>{program.title}</h2>
+
+                  <p>{program.description || "Опис програми ще не додано."}</p>
+                </div>
+              </div>
+
+              <div className="program-card__meta">
+                <span>
+                  <CalendarDays size={16} />
+                  {formatDate(program.startDate)}
+                </span>
+
+                <span>
+                  <Users size={16} />
+                  Секцій: {program.sections?.length || 0}
+                </span>
+              </div>
+
+              <div className="program-card__venue">
+                Конференція:{" "}
+                <strong>{program.venue?.title || "Без назви"}</strong>
+              </div>
+
+              <div className="program-card__actions">
+                <Link to={`/programs/${program.id}`}>
+                  Переглянути програму <ExternalLink size={15} />
+                </Link>
+
+                {isCommittee && program.status === "DRAFT" && (
+                  <button
+                    type="button"
+                    disabled={actionLoadingId === program.id}
+                    onClick={() => handlePublish(program.id)}
+                  >
+                    Опублікувати
+                  </button>
+                )}
+
+                {isCommittee && (
+                  <button
+                    type="button"
+                    disabled={actionLoadingId === program.id}
+                    onClick={() => handleSendInvitations(program.id)}
+                  >
+                    <Send size={15} />
+                    Запрошення
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

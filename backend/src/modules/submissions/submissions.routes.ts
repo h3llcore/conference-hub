@@ -17,6 +17,40 @@ import { upload } from "../../config/multer.js";
 
 const router = Router();
 
+function safeDecodeFileName(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function getSubmissionFilePath(fileName: string) {
+  const decodedFileName = safeDecodeFileName(fileName);
+
+  // Захист від ../ та випадкових шляхів
+  const onlyFileName = path.basename(decodedFileName);
+
+  return {
+    fileName: onlyFileName,
+    filePath: path.join(process.cwd(), "uploads", "submissions", onlyFileName),
+  };
+}
+
+function setPdfHeaders(
+  res: any,
+  fileName: string,
+  disposition: "inline" | "attachment",
+) {
+  const encodedFileName = encodeURIComponent(fileName);
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    `${disposition}; filename="file.pdf"; filename*=UTF-8''${encodedFileName}`,
+  );
+}
+
 router.post("/", requireAuth, upload.single("file"), createSubmissionHandler);
 
 router.get("/me", requireAuth, getMySubmissionsHandler);
@@ -42,59 +76,63 @@ router.get(
   getReviewerSubmissionByIdHandler,
 );
 
-router.get("/file/:fileName/download", requireAuth, (req, res) => {
-  const { fileName } = req.params;
+/*
+  Ці маршрути зроблені відкритими, щоб файл відкривався в новій вкладці браузера.
+  Інакше браузер не передає Authorization header і виникає "missing token".
+*/
 
-  const filePath = path.join(
-    process.cwd(),
-    "uploads",
-    "submissions",
-    fileName,
-  );
+router.get("/file/:fileName/download", (req, res) => {
+  const { fileName, filePath } = getSubmissionFilePath(req.params.fileName);
 
-  res.download(filePath, fileName, (err) => {
+  setPdfHeaders(res, fileName, "attachment");
+
+  return res.sendFile(filePath, (err) => {
     if (err && !res.headersSent) {
-      return res.status(404).json({ message: "File not found" });
+      return res.status(404).json({
+        message: "File not found",
+      });
     }
   });
 });
 
-router.get("/file/:fileName/view", requireAuth, (req, res) => {
-  const { fileName } = req.params;
+router.get("/file/:fileName/view", (req, res) => {
+  const { fileName, filePath } = getSubmissionFilePath(req.params.fileName);
 
-  const filePath = path.join(
-    process.cwd(),
-    "uploads",
-    "submissions",
-    fileName,
-  );
-
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+  setPdfHeaders(res, fileName, "inline");
 
   return res.sendFile(filePath, (err) => {
     if (err && !res.headersSent) {
-      return res.status(404).json({ message: "File not found" });
+      return res.status(404).json({
+        message: "File not found",
+      });
     }
   });
 });
 
 router.get("/public-file/:fileName/view", (req, res) => {
-  const { fileName } = req.params;
+  const { fileName, filePath } = getSubmissionFilePath(req.params.fileName);
 
-  const filePath = path.join(
-    process.cwd(),
-    "uploads",
-    "submissions",
-    fileName,
-  );
-
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+  setPdfHeaders(res, fileName, "inline");
 
   return res.sendFile(filePath, (err) => {
     if (err && !res.headersSent) {
-      return res.status(404).json({ message: "File not found" });
+      return res.status(404).json({
+        message: "File not found",
+      });
+    }
+  });
+});
+
+router.get("/public-file/:fileName/download", (req, res) => {
+  const { fileName, filePath } = getSubmissionFilePath(req.params.fileName);
+
+  setPdfHeaders(res, fileName, "attachment");
+
+  return res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) {
+      return res.status(404).json({
+        message: "File not found",
+      });
     }
   });
 });
