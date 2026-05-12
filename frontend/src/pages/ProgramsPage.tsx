@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ExternalLink, Plus, Send, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -7,6 +7,7 @@ import {
   publishConferenceProgram,
   sendConferenceInvitations,
 } from "../features/programs/programs.api";
+import { getVenues } from "../features/venues/venues.api";
 import type { ConferenceProgram } from "../types/programs.types";
 import { useAuth } from "../features/auth/AuthContext";
 import "../styles/programs.css";
@@ -18,6 +19,11 @@ type ProgramForm = {
   meetingUrl: string;
   startDate: string;
   endDate: string;
+};
+
+type ConferenceOption = {
+  id: string;
+  title: string;
 };
 
 const emptyForm: ProgramForm = {
@@ -52,31 +58,48 @@ export default function ProgramsPage() {
   const { user } = useAuth();
 
   const [programs, setPrograms] = useState<ConferenceProgram[]>([]);
+  const [conferences, setConferences] = useState<ConferenceOption[]>([]);
   const [form, setForm] = useState<ProgramForm>(emptyForm);
+
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState("");
   const [creating, setCreating] = useState(false);
+
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const isCommittee = user?.role === "COMMITTEE";
 
-  const activePrograms = programs.filter((program) => {
-    if (program.status === "FINISHED" || program.status === "ARCHIVED") {
-      return false;
-    }
+  const activePrograms = useMemo(() => {
+    return programs.filter((program) => {
+      if (program.status === "FINISHED" || program.status === "ARCHIVED") {
+        return false;
+      }
 
-    if (program.endDate && new Date(program.endDate) < new Date()) {
-      return false;
-    }
+      if (program.endDate && new Date(program.endDate) < new Date()) {
+        return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [programs]);
 
   async function loadPrograms() {
     try {
+      setLoading(true);
       setError("");
-      const data = await getConferencePrograms();
-      setPrograms(data.programs || []);
+
+      const [programsData, conferencesData] = await Promise.all([
+        getConferencePrograms(),
+        getVenues({
+          type: "CONFERENCE",
+          limit: 100,
+          sort: "newest",
+        }),
+      ]);
+
+      setPrograms(programsData.programs || []);
+      setConferences(conferencesData.venues || []);
     } catch (e: any) {
       setError(e.message || "Не вдалося завантажити програми конференцій.");
     } finally {
@@ -88,27 +111,46 @@ export default function ProgramsPage() {
     loadPrograms();
   }, []);
 
+  useEffect(() => {
+    if (!error && !success) return;
+
+    const timer = window.setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [error, success]);
+
   function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
 
   async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!form.venueId.trim() || !form.title.trim() || !form.startDate) {
-      setError("Вкажіть ID конференції, назву програми та дату початку.");
+    setError("");
+    setSuccess("");
+
+    if (!form.venueId || !form.title.trim() || !form.startDate) {
+      setError("Оберіть конференцію, вкажіть назву програми та дату початку.");
       return;
     }
 
     try {
       setCreating(true);
-      setError("");
 
       await createConferenceProgram({
-        venueId: form.venueId.trim(),
+        venueId: form.venueId,
         title: form.title.trim(),
         description: form.description.trim() || undefined,
         meetingUrl: form.meetingUrl.trim() || undefined,
@@ -117,6 +159,7 @@ export default function ProgramsPage() {
       });
 
       setForm(emptyForm);
+      setSuccess("Програму конференції успішно створено.");
       await loadPrograms();
     } catch (e: any) {
       setError(e.message || "Не вдалося створити програму.");
@@ -128,7 +171,12 @@ export default function ProgramsPage() {
   async function handlePublish(programId: string) {
     try {
       setActionLoadingId(programId);
+      setError("");
+      setSuccess("");
+
       await publishConferenceProgram(programId);
+
+      setSuccess("Програму конференції опубліковано.");
       await loadPrograms();
     } catch (e: any) {
       setError(e.message || "Не вдалося опублікувати програму.");
@@ -140,7 +188,12 @@ export default function ProgramsPage() {
   async function handleSendInvitations(programId: string) {
     try {
       setActionLoadingId(programId);
+      setError("");
+      setSuccess("");
+
       await sendConferenceInvitations(programId);
+
+      setSuccess("Запрошення авторам успішно надіслано.");
       await loadPrograms();
     } catch (e: any) {
       setError(e.message || "Не вдалося надіслати запрошення.");
@@ -154,7 +207,9 @@ export default function ProgramsPage() {
       <div className="programs-page__header">
         <div>
           <p className="programs-page__eyebrow">Conference Hub</p>
+
           <h1>Програми конференцій</h1>
+
           <p>
             Тут можна переглядати програму конференції, розклад доповідей,
             секції, посилання на онлайн-зустріч та запрошення авторам.
@@ -163,6 +218,10 @@ export default function ProgramsPage() {
       </div>
 
       {error && <div className="programs-alert programs-alert--error">{error}</div>}
+
+      {success && (
+        <div className="programs-alert programs-alert--success">{success}</div>
+      )}
 
       {isCommittee && (
         <form className="programs-form" onSubmit={handleCreate}>
@@ -173,13 +232,20 @@ export default function ProgramsPage() {
 
           <div className="programs-form__grid">
             <label>
-              ID конференції
-              <input
+              Конференція
+              <select
                 name="venueId"
                 value={form.venueId}
                 onChange={handleChange}
-                placeholder="Встав ID конференції з бази"
-              />
+              >
+                <option value="">Оберіть конференцію</option>
+
+                {conferences.map((conference) => (
+                  <option key={conference.id} value={conference.id}>
+                    {conference.title}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label>
@@ -188,7 +254,7 @@ export default function ProgramsPage() {
                 name="title"
                 value={form.title}
                 onChange={handleChange}
-                placeholder="Програма конференції..."
+                placeholder="Наприклад: Програма конференції 2026"
               />
             </label>
 
@@ -259,6 +325,7 @@ export default function ProgramsPage() {
                   </span>
 
                   <h2>{program.title}</h2>
+
                   <p>{program.description || "Опис програми ще не додано."}</p>
                 </div>
               </div>
@@ -276,7 +343,8 @@ export default function ProgramsPage() {
               </div>
 
               <div className="program-card__venue">
-                Конференція: <strong>{program.venue?.title || "Без назви"}</strong>
+                Конференція:{" "}
+                <strong>{program.venue?.title || "Без назви"}</strong>
               </div>
 
               <div className="program-card__actions">
